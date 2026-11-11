@@ -559,7 +559,7 @@ const en: Record<string, string> = {
   "Salvar e fechar": "Save and close",
   "Fechar sem salvar mudanças atuais": "Close without saving current changes",
   "Crie hipóteses, procure contraprovas, congele a preparação e depois compare aquilo que você planejou com o mercado real e sua execução.": "Create hypotheses, look for counterevidence, freeze the preparation, and then compare what you planned with the actual market and your execution.",
-  "Os dados ficam neste navegador. Use backups JSON para transportar ou restaurar regras, setups, planos, versões congeladas, revisões e imagens.": "Data stays in this browser. Use JSON backups to move or restore rules, setups, plans, frozen versions, reviews, and images."
+  "Os dados ficam neste navegador. Use backups JSON para transportar ou restaurar regras, setups, planos, versões congeladas, revisões e imagens.": "Data stays in this browser. Use JSON backups to move or restore rules, setups, plans, frozen versions, reviews, and images.",
   "Preparação do pregão": "Session preparation",
   "Organize seu sistema de trade, registre o plano antes da abertura e revise o que aconteceu depois da sessão.": "Organize your trading system, record the plan before the open, and review what happened after the session.",
   "REGRAS E PADRÕES OPERACIONAIS": "TRADING RULES AND SETUPS",
@@ -1142,7 +1142,7 @@ const es: Record<string, string> = {
   "Salvar e fechar": "Guardar y cerrar",
   "Fechar sem salvar mudanças atuais": "Cerrar sin guardar los cambios actuales",
   "Crie hipóteses, procure contraprovas, congele a preparação e depois compare aquilo que você planejou com o mercado real e sua execução.": "Crea hipótesis, busca contraevidencias, congela la preparación y luego compara lo que planificaste con el mercado real y tu ejecución.",
-  "Os dados ficam neste navegador. Use backups JSON para transportar ou restaurar regras, setups, planos, versões congeladas, revisões e imagens.": "Los datos permanecen en este navegador. Usa copias JSON para trasladar o restaurar reglas, setups, planes, versiones congeladas, revisiones e imágenes."
+  "Os dados ficam neste navegador. Use backups JSON para transportar ou restaurar regras, setups, planos, versões congeladas, revisões e imagens.": "Los datos permanecen en este navegador. Usa copias JSON para trasladar o restaurar reglas, setups, planes, versiones congeladas, revisiones e imágenes.",
   "Preparação do pregão": "Preparación de la sesión",
   "Organize seu sistema de trade, registre o plano antes da abertura e revise o que aconteceu depois da sessão.": "Organiza tu sistema de trading, registra el plan antes de la apertura y revisa lo que ocurrió después de la sesión.",
   "REGRAS E PADRÕES OPERACIONAIS": "REGLAS Y PATRONES OPERATIVOS",

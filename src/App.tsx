@@ -1374,7 +1374,7 @@ function JournalIntegration({ state, setState }: { state: AppState; setState: Re
   const unlinked = realTrades.length - linked;
   const scenarioIssues = realTrades.filter((trade) => !tradeHasPreplannedScenario(trade, state.plans.find((plan) => plan.id === trade.planId))).length;
 
-  const reportPlans = state.plans.filter((plan) => !plan.isDemo && (realTrades.some((trade) => trade.planId === plan.id) || !!plan.review.executionSummary || !!plan.review.reviewedAt)
+  const reportPlans = state.plans.filter((plan) => !plan.isDemo && (realTrades.some((trade) => trade.planId === plan.id) || !!plan.review.executionSummary || !!plan.review.reviewedAt))
     .sort((a, b) => b.tradingDate.localeCompare(a.tradingDate));
 
   return <div className="panel journal-panel">
@@ -1617,7 +1617,7 @@ function TrainingPage({ state, setState }: { state: AppState; setState: React.Di
     const counts = new Map<string, number>();
     for (const plan of state.plans) {
       if (plan.isDemo) continue;
-      for (const ruleId of plan.review.violatedRuleIds counts.set(ruleId, (counts.get(ruleId) || 0) + 1);
+      for (const ruleId of plan.review.violatedRuleIds) counts.set(ruleId, (counts.get(ruleId) || 0) + 1);
     }
     return [...counts.entries()]
       .map(([ruleId, count]) => ({ ruleId, count, rule: state.rules.find((rule) => rule.id === ruleId) }))
