@@ -26,56 +26,31 @@ A seção reúne, em uma única tela, duas partes complementares do método:
 
 A primeira utilização inclui registros fictícios identificados com o selo **Exemplo**. Cada exemplo pode ser removido individualmente.
 
-### Planos de trade
+### Planejamento de trades
 
-- plano por ativo e data;
-- viés e **convicção declarada da tese**;
-- contexto, níveis, eventos e risco máximo;
-- condições para não operar;
-- **evidências contra a tese**;
-- campo **“o que teria de acontecer para eu mudar de opinião?”**;
-- cenários A/B/C;
-- plano comportamental;
-- imagens;
-- congelamento e histórico de versões;
-- revisão pós-pregão;
-- comparação **Planejado × Mercado real × Minha execução**.
+A seção **Planejamento** reúne, em uma única área, a preparação de pregões e o acompanhamento de oportunidades que podem se tornar trades futuros.
+
+- **Planos de pregão:** registros por ativo e data, com viés, convicção, contexto, níveis, eventos, risco máximo, condições para não operar, evidências contra a tese, cenários A/B/C, plano comportamental, imagens e revisão pós-pregão.
+- **Oportunidades futuras:** análises de mercado que ainda não pertencem a um pregão específico. Podem conter ativo, timeframe, hipótese, contexto, níveis, contraprovas, cenários, conclusão e aprendizados.
+- Uma oportunidade pode ser transformada em um plano de pregão. A análise original permanece preservada, e o novo plano passa a ser um registro independente.
+- Modelos de plano podem ser reutilizados como ponto de partida; cada novo plano continua editável e independente.
+
+Antes de executar um plano, o usuário pode **registrar uma versão de referência**. O aplicativo salva uma cópia numerada do planejamento naquele momento. Essa cópia permanece inalterada para comparação posterior com o mercado e a execução. Para mudar o plano depois, cria-se uma nova versão editável. Isso não envia ordens nem impede operações no mercado.
 
 ### Qualidade da preparação
 
-Antes de congelar um plano, a ferramenta mostra um **score de completude da preparação** e aponta campos importantes que ainda estão vazios.
+Antes de registrar uma versão de referência, a ferramenta mostra um **score de completude da preparação** e aponta campos importantes que ainda estão vazios.
 
 O score:
 
 - mede apenas o preenchimento do processo;
 - **não prevê o mercado**;
 - **não é um sinal de entrada**;
-- não impede obrigatoriamente o congelamento, mas alerta quando existem lacunas críticas.
+- alerta sobre lacunas críticas, sem necessariamente impedir o registro da versão.
 
-O checklist pré-mercado agora possui estado **concluído/não concluído**.
+O checklist pré-mercado possui estado **concluído/não concluído**.
 
-Também é possível:
-
-- salvar um plano como **template**;
-- criar novos planos a partir de templates;
-- duplicar um plano anterior **sem copiar a revisão**.
-
-### Estudos
-
-A seção **Estudos** é separada dos Planos de Trade e serve para análises que não precisam estar ligadas a uma operação futura.
-
-Um estudo pode registrar:
-
-- título e objetivo;
-- ativo, timeframe e data de mercado analisada;
-- hipótese inicial;
-- contexto, níveis e fatores relevantes;
-- contraprovas;
-- cenários A/B/C;
-- como o trader agiria diante daquele contexto;
-- conclusão e próximos estudos;
-- gráficos e imagens;
-- status **Em andamento** ou **Concluído**.
+É possível salvar um plano como modelo, criar novos planos a partir de modelos e duplicar um plano anterior sem copiar a revisão.
 
 ### Histórico
 
@@ -109,7 +84,7 @@ Formato e exemplos: [`docs/JOURNAL-INTEGRATION.md`](docs/JOURNAL-INTEGRATION.md)
 
 A seção **Treinamento** transforma o histórico em exercícios práticos:
 
-- Replay de planos congelados sem mostrar inicialmente o desfecho;
+- Replay de planos com versão de referência, sem mostrar inicialmente o desfecho;
 - revisita automática de planos com baixa aderência;
 - exercícios baseados nas regras que o trader mais viola;
 - comparação **“o que pensei naquela época” × “como interpreto agora”**;

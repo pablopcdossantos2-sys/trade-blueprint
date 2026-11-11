@@ -174,3 +174,15 @@
 - [x] Criar uma identidade visual única para o ícone da aplicação, o menu e o favicon.
 - [x] Remover a seção **Documentação** dos READMEs em português, inglês e espanhol.
 - [ ] Validar tipagem, testes, build web e empacotamento Windows após as alterações.
+
+
+## Fase 10 — Planejamento integrado e linguagem clara
+
+- [x] Configurar a janela principal do aplicativo desktop para iniciar maximizada.
+- [x] Remover **Padrões de planejamento** de Configurações e levar ativos e limites iniciais para a área **Planejamento**.
+- [x] Reunir **Planos de trade** e **Estudos** em uma única área, com registros de planos de pregão e oportunidades futuras.
+- [x] Permitir transformar uma oportunidade futura em um plano de pregão independente, preservando a análise original.
+- [x] Explicar o conceito de **versão de referência** no próprio editor e substituir o termo técnico “plano congelado” nos textos apresentados ao usuário.
+- [x] Remover as abas de **Regras gerais** e **Setups operacionais** e apresentar ambas as categorias em uma página contínua do **Sistema de trade**.
+- [x] Atualizar traduções e READMEs em português, inglês e espanhol para refletir a nova organização.
+- [ ] Validar testes, tipagem, build web e empacotamento NSIS no Windows.

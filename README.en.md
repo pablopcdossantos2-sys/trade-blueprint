@@ -25,43 +25,31 @@ Both parts of the trading method are available on one screen:
 
 The first launch includes fictional records marked with an **Example** badge. Each example can be removed individually.
 
-### Trade plans
+### Trade planning
 
-- plan by asset and date;
-- bias and **declared thesis conviction**;
-- context, levels, events, and maximum risk;
-- no-trade conditions;
-- **evidence against the thesis**;
-- **“what would have to happen for me to change my mind?”**;
-- A/B/C scenarios;
-- behavior plan;
-- images;
-- freezing and version history;
-- post-session review;
-- **Planned × Actual Market × My Execution** comparison.
+The **Planning** section brings session preparation and potential future trades together in one place.
+
+- **Session plans:** records by asset and date, including bias, conviction, context, levels, events, maximum risk, no-trade conditions, evidence against the thesis, A/B/C scenarios, behavior plan, images, and post-session review.
+- **Future opportunities:** market analyses that are not tied to a specific trading session yet. They can include an asset, timeframe, hypothesis, context, levels, counterevidence, scenarios, conclusion, and lessons.
+- An opportunity can be turned into a session plan. The original analysis remains saved, while the new plan becomes an independent record.
+- Plan templates can be reused as starting points; each new plan remains editable and independent.
+
+Before acting on a plan, the user can **save a reference version**. The application stores a numbered copy of the plan exactly as it is at that moment. This copy remains unchanged for later comparison with the actual market and execution. To change the plan later, create a new editable version. This does not send orders or prevent trades in the market.
 
 ### Preparation quality
 
-Before freezing a plan, the application shows a **preparation completeness score** and identifies important missing fields.
+Before saving a reference version, the application shows a **preparation completeness score** and identifies important missing fields.
 
 The score:
 
 - measures process completeness only;
 - **does not predict the market**;
 - **is not an entry signal**;
-- warns about critical gaps without necessarily blocking the trader.
+- warns about critical gaps without necessarily blocking the user from saving a reference version.
 
-The pre-market checklist now tracks **completed/not completed** state.
+The pre-market checklist tracks **completed/not completed** state.
 
-You can also:
-
-- save a plan as a **template**;
-- create plans from templates;
-- duplicate a previous plan **without copying its review**.
-
-### Studies
-
-The **Studies** section is separate from trade plans and supports analytical exercises that do not need to be tied to a future trade.
+You can save a plan as a template, create new plans from templates, and duplicate a previous plan without copying its review.
 
 ### History
 
@@ -95,7 +83,7 @@ Format and examples: [`docs/JOURNAL-INTEGRATION.md`](docs/JOURNAL-INTEGRATION.md
 
 The **Training** section turns historical records into practical exercises:
 
-- outcome-blind Replay using frozen plans;
+- outcome-blind Replay using plans with a saved reference version;
 - automatic revisiting of low-adherence plans;
 - exercises generated from the trader's most frequently violated rules;
 - **“what I thought then” × “how I interpret it now”** comparison;

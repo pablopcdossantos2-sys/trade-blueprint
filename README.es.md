@@ -25,43 +25,31 @@ Las dos partes del método están reunidas en una sola pantalla:
 
 La primera utilización incluye registros ficticios identificados con la etiqueta **Ejemplo**. Cada ejemplo puede eliminarse individualmente.
 
-### Planes de trading
+### Planificación de trading
 
-- plan por activo y fecha;
-- sesgo y **convicción declarada de la tesis**;
-- contexto, niveles, eventos y riesgo máximo;
-- condiciones para no operar;
-- **evidencias contra la tesis**;
-- campo **“¿qué tendría que ocurrir para que cambie de opinión?”**;
-- escenarios A/B/C;
-- plan conductual;
-- imágenes;
-- congelación e historial de versiones;
-- revisión posterior;
-- comparación **Planificado × Mercado real × Mi ejecución**.
+La sección **Planificación** reúne en un solo espacio la preparación de las sesiones y el seguimiento de oportunidades que podrían convertirse en operaciones futuras.
+
+- **Planes de sesión:** registros por activo y fecha, con sesgo, convicción, contexto, niveles, eventos, riesgo máximo, condiciones para no operar, evidencias contra la tesis, escenarios A/B/C, plan conductual, imágenes y revisión posterior.
+- **Oportunidades futuras:** análisis de mercado que todavía no pertenecen a una sesión específica. Pueden incluir activo, timeframe, hipótesis, contexto, niveles, contraevidencias, escenarios, conclusión y aprendizajes.
+- Una oportunidad puede convertirse en un plan de sesión. El análisis original permanece guardado y el nuevo plan se crea como un registro independiente.
+- Los modelos de plan se pueden reutilizar como punto de partida; cada plan nuevo sigue siendo editable e independiente.
+
+Antes de operar, el usuario puede **guardar una versión de referencia**. La aplicación conserva una copia numerada del plan tal como estaba en ese momento. Esta copia no cambia y permite comparar después la planificación con el mercado real y la ejecución. Para modificar el plan más adelante, se crea una nueva versión editable. Esto no envía órdenes ni impide operar en el mercado.
 
 ### Calidad de la preparación
 
-Antes de congelar un plan, la aplicación muestra un **score de completitud de la preparación** e identifica campos importantes pendientes.
+Antes de guardar una versión de referencia, la aplicación muestra un **score de completitud de la preparación** e identifica campos importantes pendientes.
 
 El score:
 
 - mide únicamente la completitud del proceso;
 - **no predice el mercado**;
 - **no es una señal de entrada**;
-- alerta sobre lagunas críticas sin bloquear obligatoriamente al trader.
+- advierte sobre lagunas críticas sin bloquear necesariamente el registro de la versión.
 
-El checklist premercado ahora registra estado **concluido/no concluido**.
+El checklist premercado registra el estado **concluido/no concluido**.
 
-También es posible:
-
-- guardar un plan como **plantilla**;
-- crear planes a partir de plantillas;
-- duplicar un plan anterior **sin copiar su revisión**.
-
-### Estudios
-
-La sección **Estudios** se mantiene separada de los Planes de Trading y permite análisis que no necesitan estar vinculados a una operación futura.
+Es posible guardar un plan como plantilla, crear nuevos planes a partir de plantillas y duplicar un plan anterior sin copiar su revisión.
 
 ### Historial
 
@@ -95,7 +83,7 @@ Formato y ejemplos: [`docs/JOURNAL-INTEGRATION.md`](docs/JOURNAL-INTEGRATION.md)
 
 La sección **Entrenamiento** convierte el historial en ejercicios prácticos:
 
-- Replay de planes congelados sin mostrar inicialmente el desenlace;
+- Replay de planes con una versión de referencia guardada, sin mostrar inicialmente el desenlace;
 - revisión automática de planes con baja adherencia;
 - ejercicios basados en las reglas que el trader viola con mayor frecuencia;
 - comparación **“lo que pensé entonces” × “cómo lo interpreto ahora”**;
