@@ -13,23 +13,17 @@ The tool is not designed to predict the market. It organizes the trader's decisi
 3. **What will I do if scenario A, B, or C materializes?**
 4. **After the session, what did the market do, what did I do, and how closely did I follow the original plan?**
 
-## Current features — v0.11
+## Current features — v0.12
 
 ### Trading system
 
-- Entry, Exit, Risk, Time, Context, and Behavior rules;
-- rationale for each rule;
-- enable/disable status;
-- explanatory images.
+Both parts of the trading method are available on one screen:
 
-### Setup library
-
-- reusable trading patterns;
-- ideal context, entry criteria, confirmation, and invalidation;
-- stop and target/management models;
-- situations to avoid and behavioral safeguards;
-- images;
+- **General rules:** Entry, Exit, Risk, Time, Context, and Behavior limits, with rationale, enable/disable status, and images;
+- **Trading setups:** reusable patterns with context, entry criteria, confirmation, invalidation, stop, trade management, situations to avoid, and behavioral safeguards;
 - apply a setup to scenario A of a plan.
+
+The first launch includes fictional records marked with an **Example** badge. Each example can be removed individually.
 
 ### Trade plans
 
@@ -69,7 +63,7 @@ You can also:
 
 The **Studies** section is separate from trade plans and supports analytical exercises that do not need to be tied to a future trade.
 
-### History and patterns
+### History
 
 The **History** section aggregates learning over time:
 
@@ -197,8 +191,3 @@ npm run build
 
 Building the desktop installer requires additional development tools. See [`docs/DESKTOP.md`](docs/DESKTOP.md) only if you intend to develop or package the desktop application.
 
-## Documentation
-
-- [`docs/PRODUCT-SPEC.md`](docs/PRODUCT-SPEC.md)
-- [`docs/ROADMAP.md`](docs/ROADMAP.md)
-- [`docs/DESKTOP.md`](docs/DESKTOP.md)

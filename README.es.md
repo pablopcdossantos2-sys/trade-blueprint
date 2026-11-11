@@ -13,23 +13,17 @@ La herramienta no intenta predecir el mercado. Organiza el proceso de decisión 
 3. **¿Qué haré si se materializa el escenario A, B o C?**
 4. **Después de la sesión, qué hizo el mercado, qué hice yo y cuánto respeté el plan original?**
 
-## Funcionalidades actuales — v0.11
+## Funcionalidades actuales — v0.12
 
 ### Sistema de trading
 
-- reglas de Entrada, Salida, Riesgo, Horario, Contexto y Comportamiento;
-- justificación de cada regla;
-- activación/desactivación;
-- imágenes explicativas.
+Las dos partes del método están reunidas en una sola pantalla:
 
-### Biblioteca de setups
-
-- patrones operativos reutilizables;
-- contexto ideal, criterios de entrada, confirmación e invalidación;
-- modelos de stop y objetivo/gestión;
-- situaciones a evitar y cuidados conductuales;
-- imágenes;
+- **Reglas generales:** límites de Entrada, Salida, Riesgo, Horario, Contexto y Comportamiento, con justificación, activación/desactivación e imágenes;
+- **Setups operativos:** patrones reutilizables con contexto, criterios de entrada, confirmación, invalidación, stop, gestión, situaciones a evitar y cuidados conductuales;
 - aplicación de un setup al escenario A de un plan.
+
+La primera utilización incluye registros ficticios identificados con la etiqueta **Ejemplo**. Cada ejemplo puede eliminarse individualmente.
 
 ### Planes de trading
 
@@ -69,7 +63,7 @@ También es posible:
 
 La sección **Estudios** se mantiene separada de los Planes de Trading y permite análisis que no necesitan estar vinculados a una operación futura.
 
-### Historial y patrones
+### Historial
 
 La sección **Historial** agrega el aprendizaje a lo largo del tiempo:
 
@@ -197,8 +191,3 @@ npm run build
 
 La generación del instalador de escritorio requiere herramientas adicionales. Consulta [`docs/DESKTOP.md`](docs/DESKTOP.md) solo si deseas desarrollar o empaquetar la aplicación.
 
-## Documentación
-
-- [`docs/PRODUCT-SPEC.md`](docs/PRODUCT-SPEC.md)
-- [`docs/ROADMAP.md`](docs/ROADMAP.md)
-- [`docs/DESKTOP.md`](docs/DESKTOP.md)

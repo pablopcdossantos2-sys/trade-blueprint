@@ -12,7 +12,7 @@
     "desktop:dev": "tauri dev",
     "desktop:build": "tauri build --bundles nsis",
     "desktop:check": "cargo check --locked --manifest-path src-tauri/Cargo.toml",
-    "test": "node --experimental-strip-types --test tests/journalImport.test.ts tests/storage.test.ts"
+    "test": "node --experimental-strip-types --test tests/journalImport.test.ts tests/storage.test.ts tests/demoData.test.ts"
   },
   "dependencies": {
     "react": "^19.2.0",

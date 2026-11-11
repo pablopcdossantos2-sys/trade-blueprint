@@ -61,6 +61,7 @@ const scenarioSchema = z.object({
 
 const ruleSchema = z.object({
   id: z.string(),
+  isDemo: z.boolean().optional(),
   title: z.string(),
   category: z.enum(["Entrada", "Saída", "Risco", "Horário", "Contexto", "Comportamento", "Outro"]),
   description: z.string(),
@@ -137,6 +138,7 @@ const legacyStateSchema = z.object({
 
 const setupSchema = z.object({
   id: z.string(),
+  isDemo: z.boolean().optional(),
   title: z.string(),
   description: z.string(),
   marketContext: z.string(),
@@ -290,6 +292,7 @@ const planV6Schema = z.object({
 
 const planSchema = z.object({
   id: z.string(),
+  isDemo: z.boolean().optional(),
   sessionId: z.string(),
   planDate: z.string(),
   tradingDate: z.string(),
@@ -318,6 +321,7 @@ const planSchema = z.object({
 
 const planTemplateSchema = z.object({
   id: z.string(),
+  isDemo: z.boolean().optional(),
   title: z.string(),
   asset: z.string(),
   setupId: z.string().optional(),
@@ -340,6 +344,7 @@ const planTemplateSchema = z.object({
 
 const journalTradeSchema = z.object({
   id: z.string(),
+  isDemo: z.boolean().optional(),
   externalId: z.string(),
   tradingDate: z.string(),
   asset: z.string(),
@@ -360,6 +365,7 @@ const journalTradeSchema = z.object({
 
 const trainingRecordSchema = z.object({
   id: z.string(),
+  isDemo: z.boolean().optional(),
   type: z.enum(["replay", "revisit", "error"]),
   planId: z.string().optional(),
   setupId: z.string().optional(),
@@ -374,6 +380,7 @@ const trainingRecordSchema = z.object({
 
 const setupExampleSchema = z.object({
   id: z.string(),
+  isDemo: z.boolean().optional(),
   setupId: z.string(),
   planId: z.string(),
   classification: z.enum(["Correto", "Incorreto"]),
@@ -383,6 +390,7 @@ const setupExampleSchema = z.object({
 
 const studySchema = z.object({
   id: z.string(),
+  isDemo: z.boolean().optional(),
   title: z.string(),
   studyDate: z.string(),
   referenceDate: z.string(),
@@ -484,6 +492,7 @@ const stateV8Schema = z.object({
 
 const stateSchema = z.object({
   schemaVersion: z.literal(CURRENT_SCHEMA_VERSION),
+  demoDataVersion: z.number().int().optional(),
   attachmentData: z.record(z.string(), z.string()),
   rules: z.array(ruleSchema),
   setups: z.array(setupSchema),

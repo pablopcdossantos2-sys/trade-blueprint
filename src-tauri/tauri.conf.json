@@ -48,6 +48,10 @@
         "displayLanguageSelector": true,
         "startMenuFolder": "Trade Blueprint"
       }
-    }
+    },
+    "icon": [
+      "icons/32x32.png",
+      "icons/icon.ico"
+    ]
   }
 }

@@ -5,6 +5,7 @@ import { clearWebAttachmentStore, loadWebStatePayload, saveWebStateExternalized 
 import { normalizedTradeDate, parseJournalRows } from "./journalImport";
 import { clearStorageLoadGuard, exportBackup, initialState, loadStateResult, parseBackup, serializeState, STORAGE_KEY } from "./storage";
 import { localeForLanguage, setInterfaceLanguage, translateUi, type UiLanguage } from "./i18n";
+import { DEMO_DATA_VERSION, ensureDemoData } from "./demoData";
 import {
   checkDesktopIntegrity,
   checkDesktopUpdate,
@@ -41,7 +42,7 @@ import type {
   TradeStudy,
 } from "./types";
 
-type Tab = "dashboard" | "rules" | "setups" | "plans" | "studies" | "history" | "training" | "settings";
+type Tab = "dashboard" | "system" | "plans" | "studies" | "history" | "training" | "settings";
 
 const ruleCategories: RuleCategory[] = ["Entrada", "Saída", "Risco", "Horário", "Contexto", "Comportamento", "Outro"];
 const defaultChecklist = [
@@ -215,6 +216,7 @@ function duplicatePlan(plan: TradePlan): TradePlan {
   const stamp = new Date().toISOString();
   return {
     ...structuredClone(plan),
+    isDemo: false,
     id: crypto.randomUUID(),
     sessionId: crypto.randomUUID(),
     planDate: isoDateLocal(),
@@ -379,31 +381,34 @@ function Field({ label, children, hint }: { label: string; children: React.React
   return <label className="field"><span>{label}</span>{children}{hint && <small>{hint}</small>}</label>;
 }
 
-function Dashboard({ state, onOpenPlans, onOpenSetups }: { state: AppState; onOpenPlans: () => void; onOpenSetups: () => void }) {
+function Dashboard({ state, onOpenPlans, onOpenSystem }: { state: AppState; onOpenPlans: () => void; onOpenSystem: () => void }) {
   const upcoming = useMemo(
     () => [...state.plans].filter((p) => p.tradingDate >= isoDateLocal()).sort((a, b) => a.tradingDate.localeCompare(b.tradingDate)).slice(0, 6),
     [state.plans],
   );
-  const reviewedPlans = state.plans.filter((p) => !!p.review.reviewedAt);
+  const reviewedPlans = state.plans.filter((p) => !p.isDemo && !!p.review.reviewedAt);
   const reviewed = reviewedPlans.length;
   const followed = reviewedPlans.filter((p) => p.review.followedPlan === "Sim").length;
-  const frozen = state.plans.filter((p) => p.planStatus === "frozen").length;
+  const frozen = state.plans.filter((p) => !p.isDemo && p.planStatus === "frozen").length;
+  const realRules = state.rules.filter((r) => !r.isDemo && r.active).length;
+  const realSetups = state.setups.filter((s) => !s.isDemo && s.active).length;
+  const realStudies = state.studies.filter((study) => !study.isDemo).length;
 
   return <section className="page">
     <div className="hero">
       <div>
         <span className="eyebrow">PREPARAÇÃO ANTES DA EXECUÇÃO</span>
-        <h1>Transforme hipóteses em decisões previamente pensadas.</h1>
-        <p>Planeje o pregão antes da abertura, confronte sua própria tese, congele a preparação e compare depois o mercado real com aquilo que você havia decidido fazer.</p>
+        <h1>Preparação do pregão</h1>
+        <p>Organize seu sistema de trade, registre o plano antes da abertura e revise o que aconteceu depois da sessão.</p>
       </div>
       <button className="primary big" onClick={onOpenPlans}>Criar plano para o próximo pregão</button>
     </div>
 
     <div className="stats">
-      <div><strong>{state.rules.filter((r) => r.active).length}</strong><span>regras ativas</span></div>
-      <div><strong>{state.setups.filter((s) => s.active).length}</strong><span>setups ativos</span></div>
+      <div><strong>{realRules}</strong><span>regras ativas</span></div>
+      <div><strong>{realSetups}</strong><span>setups ativos</span></div>
       <div><strong>{frozen}</strong><span>planos congelados</span></div>
-      <div><strong>{state.studies.length}</strong><span>estudos registrados</span></div>
+      <div><strong>{realStudies}</strong><span>estudos registrados</span></div>
       <div><strong>{reviewed ? Math.round((followed / reviewed) * 100) : 0}%</strong><span>aderência integral</span></div>
     </div>
 
@@ -412,7 +417,7 @@ function Dashboard({ state, onOpenPlans, onOpenSetups }: { state: AppState; onOp
         <div className="panel-title"><div><span className="eyebrow">AGENDA</span><h2>Próximos planos</h2></div></div>
         {upcoming.length ? <div className="list">{upcoming.map((p) => <div className="list-row" key={p.id}>
           <div><strong>{p.asset}</strong><span>{fmtDate(p.tradingDate)} • viés {p.bias.toLowerCase()} • {p.versions.length ? `v${p.versions.length}` : "sem versão congelada"}</span></div>
-          <span className={`badge ${p.review.reviewedAt ? "ok" : p.planStatus === "frozen" ? "locked" : ""}`}>{p.review.reviewedAt ? "revisado" : p.planStatus === "frozen" ? "congelado" : "rascunho"}</span>
+          <div className="badges">{p.isDemo && <span className="badge demo">Exemplo</span>}<span className={`badge ${p.review.reviewedAt ? "ok" : p.planStatus === "frozen" ? "locked" : ""}`}>{p.review.reviewedAt ? "revisado" : p.planStatus === "frozen" ? "congelado" : "rascunho"}</span></div>
         </div>)}</div> : <div className="empty">Nenhum plano futuro. Crie o primeiro plano para o próximo pregão.</div>}
       </div>
       <div className="panel">
@@ -423,20 +428,20 @@ function Dashboard({ state, onOpenPlans, onOpenSetups }: { state: AppState; onOp
           <li><b>Congelamento</b><span>Preserve exatamente o que havia sido decidido antes do pregão.</span></li>
           <li><b>Comparação</b><span>Separe mercado real, sua execução e qualidade do plano.</span></li>
         </ol>
-        <button className="small" onClick={onOpenSetups}>Abrir biblioteca de setups</button>
+        <button className="small" onClick={onOpenSystem}>Abrir sistema de trade</button>
       </div>
     </div>
   </section>;
 }
 
-function RulesPage({ state, setState }: { state: AppState; setState: React.Dispatch<React.SetStateAction<AppState>> }) {
+function RulesPage({ state, setState, embedded = false }: { state: AppState; setState: React.Dispatch<React.SetStateAction<AppState>>; embedded?: boolean }) {
   const [editing, setEditing] = useState<TradeRule | null>(null);
   const blank = (): TradeRule => ({ id: crypto.randomUUID(), title: "", category: "Entrada", description: "", rationale: "", active: true, attachments: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
   const [draft, setDraft] = useState<TradeRule>(blank());
 
   function save() {
     if (!draft.title.trim() || !draft.description.trim()) return;
-    const item = { ...draft, updatedAt: new Date().toISOString() };
+    const item = { ...draft, isDemo: false, updatedAt: new Date().toISOString() };
     setState((s) => ({ ...s, rules: editing ? s.rules.map((r) => r.id === item.id ? item : r) : [item, ...s.rules] }));
     setEditing(null);
     setDraft(blank());
@@ -448,8 +453,8 @@ function RulesPage({ state, setState }: { state: AppState; setState: React.Dispa
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  return <section className="page">
-    <div className="page-heading"><div><span className="eyebrow">SEU PLAYBOOK</span><h1>Regras do sistema de trade</h1><p>Registre aquilo que deve continuar verdadeiro mesmo quando o mercado ou suas emoções mudarem.</p></div></div>
+  return <section className={embedded ? "system-subpage" : "page"}>
+    {!embedded && <div className="page-heading"><div><span className="eyebrow">REGRAS GERAIS</span><h1>Regras gerais</h1><p>Defina limites de risco, horários, entradas, saídas e comportamento que valem para todas as operações.</p></div></div>}
     <div className="panel form-panel"><h2>{editing ? "Editar regra" : "Adicionar regra"}</h2>
       <div className="form-grid">
         <Field label="Nome da regra"><input value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} placeholder="Ex.: Não aumentar stop após entrar" /></Field>
@@ -462,7 +467,7 @@ function RulesPage({ state, setState }: { state: AppState; setState: React.Dispa
       <div className="actions"><button className="primary" onClick={save}>{editing ? "Salvar alterações" : "Adicionar regra"}</button>{editing && <button onClick={() => { setEditing(null); setDraft(blank()); }}>Cancelar</button>}</div>
     </div>
     <div className="cards">{state.rules.map((rule) => <article className={`rule-card ${!rule.active ? "muted" : ""}`} key={rule.id}>
-      <div className="card-top"><span className="badge">{rule.category}</span><span className={`status-dot ${rule.active ? "on" : ""}`}>{rule.active ? "ativa" : "inativa"}</span></div>
+      <div className="card-top"><div className="badges"><span className="badge">{rule.category}</span>{rule.isDemo && <span className="badge demo">Exemplo</span>}</div><span className={`status-dot ${rule.active ? "on" : ""}`}>{rule.active ? "ativa" : "inativa"}</span></div>
       <h3>{rule.title}</h3><p>{rule.description}</p>
       {rule.rationale && <div className="why"><b>Por quê:</b> {rule.rationale}</div>}
       {!!rule.attachments.length && <div className="mini-images">{rule.attachments.slice(0, 3).map((img) => <img key={img.id} src={img.dataUrl} alt={img.name} />)}</div>}
@@ -483,7 +488,7 @@ function RulesPage({ state, setState }: { state: AppState; setState: React.Dispa
   </section>;
 }
 
-function SetupsPage({ state, setState }: { state: AppState; setState: React.Dispatch<React.SetStateAction<AppState>> }) {
+function SetupsPage({ state, setState, embedded = false }: { state: AppState; setState: React.Dispatch<React.SetStateAction<AppState>>; embedded?: boolean }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<TradeSetup>(() => blankSetup());
 
@@ -494,7 +499,7 @@ function SetupsPage({ state, setState }: { state: AppState; setState: React.Disp
 
   function save() {
     if (!draft.title.trim() || !draft.entryCriteria.trim()) return;
-    const item = { ...draft, updatedAt: new Date().toISOString() };
+    const item = { ...draft, isDemo: false, updatedAt: new Date().toISOString() };
     setState((s) => ({
       ...s,
       setups: editingId ? s.setups.map((setup) => setup.id === item.id ? item : setup) : [item, ...s.setups],
@@ -508,8 +513,8 @@ function SetupsPage({ state, setState }: { state: AppState; setState: React.Disp
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  return <section className="page">
-    <div className="page-heading"><div><span className="eyebrow">PADRÕES REPETÍVEIS</span><h1>Biblioteca de setups</h1><p>Guarde o padrão operacional que você quer reconhecer repetidamente. O setup serve como template; o plano diário adapta esse padrão ao contexto real do pregão.</p></div></div>
+  return <section className={embedded ? "system-subpage" : "page"}>
+    {!embedded && <div className="page-heading"><div><span className="eyebrow">PADRÕES OPERACIONAIS</span><h1>Setups operacionais</h1><p>Descreva os padrões específicos de entrada, com contexto, confirmação e invalidação.</p></div></div>}
     <div className="panel form-panel">
       <h2>{editingId ? "Editar setup" : "Novo setup"}</h2>
       <div className="form-grid two">
@@ -530,7 +535,7 @@ function SetupsPage({ state, setState }: { state: AppState; setState: React.Disp
     </div>
 
     <div className="cards setup-cards">{state.setups.map((setup) => <article className={`rule-card ${!setup.active ? "muted" : ""}`} key={setup.id}>
-      <div className="card-top"><span className="badge">Setup</span><span className={`status-dot ${setup.active ? "on" : ""}`}>{setup.active ? "ativo" : "inativo"}</span></div>
+      <div className="card-top"><div className="badges"><span className="badge">Setup</span>{setup.isDemo && <span className="badge demo">Exemplo</span>}</div><span className={`status-dot ${setup.active ? "on" : ""}`}>{setup.active ? "ativo" : "inativo"}</span></div>
       <h3>{setup.title}</h3><p>{setup.description || setup.marketContext}</p>
       <div className="why"><b>Entrada:</b> {setup.entryCriteria}</div>
       {setup.invalidation && <div className="why"><b>Invalida quando:</b> {setup.invalidation}</div>}
@@ -549,6 +554,30 @@ function SetupsPage({ state, setState }: { state: AppState; setState: React.Disp
       }}>Remover</button></div>
     </article>)}</div>
     {!state.setups.length && <div className="empty">Nenhum setup cadastrado. Registre primeiro os padrões que você realmente deseja repetir e reconhecer.</div>}
+  </section>;
+}
+
+
+function SystemPage({ state, setState }: { state: AppState; setState: React.Dispatch<React.SetStateAction<AppState>> }) {
+  const [section, setSection] = useState<"rules" | "setups">("rules");
+  return <section className="page system-page">
+    <div className="page-heading">
+      <div>
+        <span className="eyebrow">REGRAS E PADRÕES OPERACIONAIS</span>
+        <h1>Sistema de trade</h1>
+        <p>Cadastre as regras permanentes e os padrões de entrada que compõem seu método. Use as regras gerais para definir limites e os setups para descrever situações específicas de operação.</p>
+      </div>
+    </div>
+    <div className="system-switcher" role="tablist" aria-label="Componentes do sistema de trade">
+      <button type="button" role="tab" aria-selected={section === "rules"} className={section === "rules" ? "active" : ""} onClick={() => setSection("rules")}>
+        <span><b>Regras gerais</b><small>Risco, horários, limites e comportamento</small></span><strong>{state.rules.length}</strong>
+      </button>
+      <button type="button" role="tab" aria-selected={section === "setups"} className={section === "setups" ? "active" : ""} onClick={() => setSection("setups")}>
+        <span><b>Setups operacionais</b><small>Contexto, entrada, confirmação e invalidação</small></span><strong>{state.setups.length}</strong>
+      </button>
+    </div>
+    <div hidden={section !== "rules"}><RulesPage state={state} setState={setState} embedded /></div>
+    <div hidden={section !== "setups"}><SetupsPage state={state} setState={setState} embedded /></div>
   </section>;
 }
 
@@ -951,22 +980,23 @@ function StudiesPage({ state, setState }: { state: AppState; setState: React.Dis
   );
 
   function persist(study: TradeStudy) {
+    const savedStudy = { ...study, isDemo: false };
     setState((current) => ({
       ...current,
-      studies: current.studies.some((x) => x.id === study.id) ? current.studies.map((x) => x.id === study.id ? study : x) : [study, ...current.studies],
+      studies: current.studies.some((x) => x.id === savedStudy.id) ? current.studies.map((x) => x.id === savedStudy.id ? savedStudy : x) : [savedStudy, ...current.studies],
     }));
-    setEditing(study);
+    setEditing(savedStudy);
   }
 
   if (editing) return <section className="page"><StudyEditor initial={editing} assets={state.settings.assets} setups={state.setups} onSave={persist} onClose={() => setEditing(null)} /></section>;
 
   return <section className="page">
-    <div className="page-heading"><div><span className="eyebrow">TREINO ANALÍTICO</span><h1>Estudos</h1><p>Crie análises independentes de operações futuras para exercitar leitura de contexto, hipóteses, cenários, invalidação e tomada de decisão.</p></div><button className="primary" onClick={() => setEditing(newStudy(state))}>+ Novo estudo</button></div>
+    <div className="page-heading"><div><span className="eyebrow">ANÁLISE DE MERCADO</span><h1>Estudos</h1><p>Analise contextos, níveis e cenários sem precisar vincular o estudo a uma operação futura.</p></div><button className="primary" onClick={() => setEditing(newStudy(state))}>+ Novo estudo</button></div>
     <div className="toolbar"><input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Filtrar por título, ativo, timeframe ou data…" /><span>{studies.length} estudo(s)</span></div>
     <div className="plan-list">{studies.map((study) => <article className="plan-card" key={study.id}>
       <div className="plan-date"><strong>{fmtDate(study.studyDate)}</strong><span>{study.asset || "Estudo geral"}</span></div>
       <div className="plan-main">
-        <div className="card-top"><div className="badges"><span className={`badge bias-${study.bias.toLowerCase()}`}>Viés {study.bias}</span>{study.timeframe && <span className="badge">{study.timeframe}</span>}</div><span className={`badge ${study.status === "completed" ? "ok" : "warning"}`}>{study.status === "completed" ? "Concluído" : "Em andamento"}</span></div>
+        <div className="card-top"><div className="badges"><span className={`badge bias-${study.bias.toLowerCase()}`}>Viés {study.bias}</span>{study.timeframe && <span className="badge">{study.timeframe}</span>}{study.isDemo && <span className="badge demo">Exemplo</span>}</div><span className={`badge ${study.status === "completed" ? "ok" : "warning"}`}>{study.status === "completed" ? "Concluído" : "Em andamento"}</span></div>
         <h3>{study.title}</h3>
         <p>{study.objective || study.marketContext || "Objetivo ainda não descrito."}</p>
         {study.evidenceAgainstThesis && <div className="counter-mini"><b>Contra a hipótese:</b> {study.evidenceAgainstThesis}</div>}
@@ -987,8 +1017,9 @@ function PlansPage({ state, setState }: { state: AppState; setState: React.Dispa
   );
 
   function persist(plan: TradePlan) {
-    setState((s) => ({ ...s, plans: s.plans.some((x) => x.id === plan.id) ? s.plans.map((x) => x.id === plan.id ? plan : x) : [plan, ...s.plans] }));
-    setEditing(plan);
+    const savedPlan = { ...plan, isDemo: false };
+    setState((s) => ({ ...s, plans: s.plans.some((x) => x.id === savedPlan.id) ? s.plans.map((x) => x.id === savedPlan.id ? savedPlan : x) : [savedPlan, ...s.plans] }));
+    setEditing(savedPlan);
   }
 
   function saveTemplate(template: PlanTemplate) {
@@ -1006,17 +1037,17 @@ function PlansPage({ state, setState }: { state: AppState; setState: React.Dispa
   if (editing) return <section className="page"><PlanEditor initial={editing} assets={state.settings.assets} setups={state.setups} rules={state.rules} onClose={() => setEditing(null)} onPersist={persist} onCreateTemplate={saveTemplate} /></section>;
 
   return <section className="page">
-    <div className="page-heading"><div><span className="eyebrow">ANTES E DEPOIS DO MERCADO</span><h1>Planos de trade</h1><p>Crie hipóteses, procure contraprovas, congele a preparação e depois compare aquilo que você planejou com o mercado real e sua execução.</p></div><button className="primary" onClick={() => setEditing(newPlan(state))}>+ Novo plano</button></div>
+    <div className="page-heading"><div><span className="eyebrow">PREPARAÇÃO E REVISÃO</span><h1>Planos de trade</h1><p>Registre contexto, risco, cenários e ações antes do pregão. Depois, compare o plano com o mercado e sua execução.</p></div><button className="primary" onClick={() => setEditing(newPlan(state))}>+ Novo plano</button></div>
     {!!state.planTemplates.length && <div className="panel template-panel">
-      <div className="panel-title"><div><span className="eyebrow">REUTILIZAR PREPARAÇÃO</span><h2>Templates de plano</h2></div></div>
+      <div className="panel-title"><div><span className="eyebrow">REUTILIZAR PREPARAÇÃO</span><h2>Modelos de plano</h2></div></div>
       <p className="muted-text">Use um template como ponto de partida. O novo plano continua sendo um rascunho independente e deve ser adaptado ao contexto do dia.</p>
-      <div className="template-list">{state.planTemplates.map((template) => <div className="template-row" key={template.id}><div><b>{template.title}</b><span>{template.asset || "Qualquer ativo"} • {template.setupId ? "com setup de referência" : "sem setup de referência"}</span></div><div className="actions"><button onClick={() => createFromTemplate(template)}>Criar plano</button><button className="danger" onClick={() => setState((current) => ({ ...current, planTemplates: current.planTemplates.filter((item) => item.id !== template.id) }))}>Remover</button></div></div>)}</div>
+      <div className="template-list">{state.planTemplates.map((template) => <div className="template-row" key={template.id}><div><b>{template.title}</b>{template.isDemo && <span className="badge demo">Exemplo</span>}<span>{template.asset || "Qualquer ativo"} • {template.setupId ? "com setup de referência" : "sem setup de referência"}</span></div><div className="actions"><button onClick={() => createFromTemplate(template)}>Criar plano</button><button className="danger" onClick={() => setState((current) => ({ ...current, planTemplates: current.planTemplates.filter((item) => item.id !== template.id) }))}>Remover</button></div></div>)}</div>
     </div>}
     <div className="toolbar"><input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Filtrar por ativo ou data…" /><span>{plans.length} plano(s)</span></div>
     <div className="plan-list">{plans.map((p) => <article className="plan-card" key={p.id}>
       <div className="plan-date"><strong>{fmtDate(p.tradingDate)}</strong><span>{p.asset}</span></div>
       <div className="plan-main">
-        <div className="card-top"><div className="badges"><span className={`badge bias-${p.bias.toLowerCase()}`}>Viés {p.bias}</span><span className={`badge ${p.planStatus === "frozen" ? "locked" : "warning"}`}>{p.planStatus === "frozen" ? `Congelado v${p.versions.length}` : p.versions.length ? `Rascunho para v${p.versions.length + 1}` : "Rascunho sem versão"}</span><span className="badge">Preparação {planReadiness(p).score}%</span></div>{p.review.reviewedAt ? <span className="badge ok">Revisado</span> : <span className="badge">Aguardando revisão</span>}</div>
+        <div className="card-top"><div className="badges"><span className={`badge bias-${p.bias.toLowerCase()}`}>Viés {p.bias}</span>{p.isDemo && <span className="badge demo">Exemplo</span>}<span className={`badge ${p.planStatus === "frozen" ? "locked" : "warning"}`}>{p.planStatus === "frozen" ? `Congelado v${p.versions.length}` : p.versions.length ? `Rascunho para v${p.versions.length + 1}` : "Rascunho sem versão"}</span><span className="badge">Preparação {planReadiness(p).score}%</span></div>{p.review.reviewedAt ? <span className="badge ok">Revisado</span> : <span className="badge">Aguardando revisão</span>}</div>
         <h3>{p.scenarios.find((s) => s.label === "A")?.title || "Plano sem título de cenário A"}</h3>
         <p>{p.marketContext || "Contexto ainda não descrito."}</p>
         {p.evidenceAgainstThesis && <div className="counter-mini"><b>Contra a tese:</b> {p.evidenceAgainstThesis}</div>}
@@ -1338,11 +1369,12 @@ function JournalIntegration({ state, setState }: { state: AppState; setState: Re
     patchTrade(trade.id, { planId: plan?.id, sessionId: plan?.sessionId, scenarioLabel: plan ? trade.scenarioLabel : "" });
   }
 
-  const linked = state.journalTrades.filter((trade) => !!trade.planId).length;
-  const unlinked = state.journalTrades.length - linked;
-  const scenarioIssues = state.journalTrades.filter((trade) => !tradeHasPreplannedScenario(trade, state.plans.find((plan) => plan.id === trade.planId))).length;
+  const realTrades = state.journalTrades.filter((trade) => !trade.isDemo);
+  const linked = realTrades.filter((trade) => !!trade.planId).length;
+  const unlinked = realTrades.length - linked;
+  const scenarioIssues = realTrades.filter((trade) => !tradeHasPreplannedScenario(trade, state.plans.find((plan) => plan.id === trade.planId))).length;
 
-  const reportPlans = state.plans.filter((plan) => state.journalTrades.some((trade) => trade.planId === plan.id) || !!plan.review.executionSummary || !!plan.review.reviewedAt)
+  const reportPlans = state.plans.filter((plan) => !plan.isDemo && (realTrades.some((trade) => trade.planId === plan.id) || !!plan.review.executionSummary || !!plan.review.reviewedAt)
     .sort((a, b) => b.tradingDate.localeCompare(a.tradingDate));
 
   return <div className="panel journal-panel">
@@ -1351,11 +1383,11 @@ function JournalIntegration({ state, setState }: { state: AppState; setState: Re
     <p className="muted-text">O importador aceita nomes de colunas comuns em português ou inglês. Data e ativo são obrigatórios. Quando existir exatamente um plano para a mesma data e ativo, o vínculo é criado automaticamente.</p>
     {message && <div className="notice">{message}</div>}
 
-    <div className="journal-stats"><div><strong>{state.journalTrades.length}</strong><span>trades importados</span></div><div><strong>{linked}</strong><span>vinculados a planos</span></div><div><strong>{unlinked}</strong><span>sem plano vinculado</span></div><div><strong>{scenarioIssues}</strong><span>sem cenário pré-planejado</span></div></div>
+    <div className="journal-stats"><div><strong>{realTrades.length}</strong><span>trades importados</span></div><div><strong>{linked}</strong><span>vinculados a planos</span></div><div><strong>{unlinked}</strong><span>sem plano vinculado</span></div><div><strong>{scenarioIssues}</strong><span>sem cenário pré-planejado</span></div></div>
 
     {!!state.journalTrades.length && <div className="journal-table-wrap"><table className="journal-table"><thead><tr><th>Data</th><th>Ativo</th><th>Execução</th><th>Resultado</th><th>Plano</th><th>Cenário</th><th></th></tr></thead><tbody>{state.journalTrades.slice(0, 100).map((trade) => {
       const linkedPlan = state.plans.find((plan) => plan.id === trade.planId);
-      return <tr key={trade.id}><td>{fmtDate(trade.tradingDate)}</td><td><b>{trade.asset}</b><small>{trade.side}</small></td><td><span>{[trade.entryTime, trade.entryPrice].filter(Boolean).join(" @ ") || "—"}</span><small>{[trade.exitTime, trade.exitPrice].filter(Boolean).join(" @ ")}</small></td><td>{trade.result || "—"}</td><td><select value={trade.planId ?? ""} onChange={(e) => linkPlan(trade, e.target.value)}><option value="">Sem vínculo</option>{state.plans.map((plan) => <option key={plan.id} value={plan.id}>{plan.asset} • {fmtDate(plan.tradingDate)}</option>)}</select></td><td><select value={trade.scenarioLabel} disabled={!linkedPlan} onChange={(e) => patchTrade(trade.id, { scenarioLabel: e.target.value as JournalTrade["scenarioLabel"] })}><option value="">—</option><option>A</option><option>B</option><option>C</option></select>{linkedPlan && !tradeHasPreplannedScenario(trade, linkedPlan) && <small className="warning-text">Não corresponde a cenário previamente definido.</small>}</td><td><button className="tiny danger" onClick={() => setState((current) => ({ ...current, journalTrades: current.journalTrades.filter((item) => item.id !== trade.id) }))}>Remover</button></td></tr>;
+      return <tr key={trade.id}><td>{fmtDate(trade.tradingDate)}</td><td><b>{trade.asset}</b>{trade.isDemo && <span className="badge demo">Exemplo</span>}<small>{trade.side}</small></td><td><span>{[trade.entryTime, trade.entryPrice].filter(Boolean).join(" @ ") || "—"}</span><small>{[trade.exitTime, trade.exitPrice].filter(Boolean).join(" @ ")}</small></td><td>{trade.result || "—"}</td><td><select value={trade.planId ?? ""} onChange={(e) => linkPlan(trade, e.target.value)}><option value="">Sem vínculo</option>{state.plans.map((plan) => <option key={plan.id} value={plan.id}>{plan.asset} • {fmtDate(plan.tradingDate)}</option>)}</select></td><td><select value={trade.scenarioLabel} disabled={!linkedPlan} onChange={(e) => patchTrade(trade.id, { scenarioLabel: e.target.value as JournalTrade["scenarioLabel"] })}><option value="">—</option><option>A</option><option>B</option><option>C</option></select>{linkedPlan && !tradeHasPreplannedScenario(trade, linkedPlan) && <small className="warning-text">Não corresponde a cenário previamente definido.</small>}</td><td><button className="tiny danger" onClick={() => setState((current) => ({ ...current, journalTrades: current.journalTrades.filter((item) => item.id !== trade.id) }))}>Remover</button></td></tr>;
     })}</tbody></table></div>}
 
     <div className="history-section-title journal-report-title"><div><span className="eyebrow">PROCESSO + RESULTADO</span><h3>Planejei × operei × registrei</h3></div></div>
@@ -1381,6 +1413,7 @@ function HistoryPage({ state, setState }: { state: AppState; setState: React.Dis
   const [galleryPreviewUrl, setGalleryPreviewUrl] = useState("");
 
   const filteredPlans = useMemo(() => state.plans.filter((plan) => {
+    if (plan.isDemo) return false;
     if (asset && plan.asset !== asset) return false;
     if (setupId && plan.setupId !== setupId) return false;
     if (scenario && plan.review.observedScenario !== scenario) return false;
@@ -1508,7 +1541,7 @@ function HistoryPage({ state, setState }: { state: AppState; setState: React.Dis
       : ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 
   return <section className="page history-page">
-    <div className="page-heading"><div><span className="eyebrow">APRENDIZADO HISTÓRICO</span><h1>Histórico e padrões</h1><p>Transforme revisões individuais em evidências sobre sua preparação, leitura e execução ao longo do tempo.</p></div></div>
+    <div className="page-heading"><div><span className="eyebrow">CONSULTA E MÉTRICAS</span><h1>Histórico</h1><p>Consulte revisões, aderência, execuções e métricas de preparação ao longo do tempo.</p></div></div>
 
     <div className="panel history-filters">
       <h2>Filtros</h2>
@@ -1583,7 +1616,8 @@ function TrainingPage({ state, setState }: { state: AppState; setState: React.Di
   const violationStats = useMemo(() => {
     const counts = new Map<string, number>();
     for (const plan of state.plans) {
-      for (const ruleId of plan.review.violatedRuleIds) counts.set(ruleId, (counts.get(ruleId) || 0) + 1);
+      if (plan.isDemo) continue;
+      for (const ruleId of plan.review.violatedRuleIds counts.set(ruleId, (counts.get(ruleId) || 0) + 1);
     }
     return [...counts.entries()]
       .map(([ruleId, count]) => ({ ruleId, count, rule: state.rules.find((rule) => rule.id === ruleId) }))
@@ -1695,7 +1729,7 @@ function TrainingPage({ state, setState }: { state: AppState; setState: React.Di
   }
 
   return <section className="page training-page">
-    <div className="page-heading"><div><span className="eyebrow">TREINAMENTO DELIBERADO</span><h1>Laboratório de decisão</h1><p>Revisite situações reais sem deixar o desfecho contaminar sua nova leitura. O objetivo é praticar processo, reconhecimento de contexto e disciplina.</p></div></div>
+    <div className="page-heading"><div><span className="eyebrow">TREINAMENTO DELIBERADO</span><h1>Treinamento de decisões</h1><p>Pratique a leitura de planos anteriores antes de rever o desfecho e treine a correção de erros recorrentes.</p></div></div>
 
     <div className="training-layout">
       <div className="panel replay-selector">
@@ -1703,14 +1737,14 @@ function TrainingPage({ state, setState }: { state: AppState; setState: React.Di
         <p className="muted-text">O resultado do pregão fica oculto até você escrever sua decisão e interpretação atuais.</p>
         <select value={selectedPlanId} onChange={(e) => beginReplay(e.target.value, "replay")}>
           <option value="">Selecione um plano</option>
-          {replayCandidates.map((plan) => <option key={plan.id} value={plan.id}>{fmtDate(plan.tradingDate)} • {plan.asset} • v{plan.versions.length}</option>)}
+          {replayCandidates.map((plan) => <option key={plan.id} value={plan.id}>{fmtDate(plan.tradingDate)} • {plan.asset} • v{plan.versions.length}{plan.isDemo ? " • Exemplo" : ""}</option>)}
         </select>
         {!replayCandidates.length && <div className="empty">Congele planos antes do pregão para formar material de Replay.</div>}
       </div>
 
       <div className="panel">
         <span className="eyebrow">BAIXA ADERÊNCIA</span><h2>Planos para revisitar</h2>
-        {lowAdherence.length ? <div className="training-list">{lowAdherence.slice(0, 10).map((plan) => <div key={plan.id}><div><b>{fmtDate(plan.tradingDate)} • {plan.asset}</b><span>{plan.review.followedPlan} • {state.setups.find((setup) => setup.id === plan.setupId)?.title || "Sem setup"}</span></div><button onClick={() => beginReplay(plan.id, "revisit")}>Revisitar</button></div>)}</div> : <div className="empty">Nenhum plano revisado com aderência parcial ou negativa.</div>}
+        {lowAdherence.length ? <div className="training-list">{lowAdherence.slice(0, 10).map((plan) => <div key={plan.id}><div><b>{fmtDate(plan.tradingDate)} • {plan.asset}</b>{plan.isDemo && <span className="badge demo">Exemplo</span>}<span>{plan.review.followedPlan} • {state.setups.find((setup) => setup.id === plan.setupId)?.title || "Sem setup"}</span></div><button onClick={() => beginReplay(plan.id, "revisit")}>Revisitar</button></div>)}</div> : <div className="empty">Nenhum plano revisado com aderência parcial ou negativa.</div>}
       </div>
     </div>
 
@@ -1772,12 +1806,12 @@ function TrainingPage({ state, setState }: { state: AppState; setState: React.Di
     </div>
 
     <div className="panel">
-      <div className="history-section-title"><div><span className="eyebrow">EXEMPLOS POR SETUP</span><h2>Biblioteca de referência</h2></div><span>{state.setupExamples.length} exemplo(s)</span></div>
+      <div className="history-section-title"><div><span className="eyebrow">EXEMPLOS POR SETUP</span><h2>Exemplos classificados</h2></div><span>{state.setupExamples.length} exemplo(s)</span></div>
       {state.setupExamples.length ? <div className="setup-example-grid">{state.setupExamples.map((example) => {
         const plan = state.plans.find((item) => item.id === example.planId);
         const setup = state.setups.find((item) => item.id === example.setupId);
         const images = plan ? [...plan.attachments, ...plan.review.attachments].slice(0, 3) : [];
-        return <article key={example.id} className={`setup-example ${example.classification === "Correto" ? "correct" : "incorrect"}`}><div className="card-top"><span className="badge">{setup?.title || "Setup removido"}</span><span className={`badge ${example.classification === "Correto" ? "ok" : "warning"}`}>{example.classification}</span></div><h3>{plan ? `${fmtDate(plan.tradingDate)} • ${plan.asset}` : "Plano removido"}</h3><p>{example.notes || "Sem observações adicionais."}</p>{images.length > 0 && <div className="mini-images">{images.map((image) => <img key={image.id} src={image.dataUrl} alt={image.name} />)}</div>}<button className="tiny danger" onClick={() => setState((current) => ({ ...current, setupExamples: current.setupExamples.filter((item) => item.id !== example.id) }))}>Remover</button></article>;
+        return <article key={example.id} className={`setup-example ${example.classification === "Correto" ? "correct" : "incorrect"}`}><div className="card-top"><div className="badges"><span className="badge">{setup?.title || "Setup removido"}</span>{example.isDemo && <span className="badge demo">Exemplo</span>}</div><span className={`badge ${example.classification === "Correto" ? "ok" : "warning"}`}>{example.classification}</span></div><h3>{plan ? `${fmtDate(plan.tradingDate)} • ${plan.asset}` : "Plano removido"}</h3><p>{example.notes || "Sem observações adicionais."}</p>{images.length > 0 && <div className="mini-images">{images.map((image) => <img key={image.id} src={image.dataUrl} alt={image.name} />)}</div>}<button className="tiny danger" onClick={() => setState((current) => ({ ...current, setupExamples: current.setupExamples.filter((item) => item.id !== example.id) }))}>Remover</button></article>;
       })}</div> : <div className="empty">Classifique exemplos revisados para construir sua biblioteca pessoal de execução.</div>}
     </div>
 
@@ -1786,10 +1820,18 @@ function TrainingPage({ state, setState }: { state: AppState; setState: React.Di
       {state.trainingRecords.length ? <div className="training-records">{state.trainingRecords.map((record) => {
         const plan = state.plans.find((item) => item.id === record.planId);
         const rule = state.rules.find((item) => item.id === record.ruleId);
-        return <article key={record.id}><div><span className="badge">{record.type === "error" ? "Erro recorrente" : record.type === "revisit" ? "Revisita" : "Replay"}</span><b>{plan ? `${fmtDate(plan.tradingDate)} • ${plan.asset}` : rule?.title || record.prompt}</b></div><p><strong>Decisão/resposta:</strong> {record.decisionNow}</p>{record.interpretationNow && <p><strong>Interpretação:</strong> {record.interpretationNow}</p>}{record.comparisonNotes && <p><strong>Comparação/aprendizado:</strong> {record.comparisonNotes}</p>}<small>{fmtDateTime(record.createdAt)}</small></article>;
+        return <article key={record.id}><div className="training-record-head"><div><span className="badge">{record.type === "error" ? "Erro recorrente" : record.type === "revisit" ? "Revisita" : "Replay"}</span>{record.isDemo && <span className="badge demo">Exemplo</span>}<b>{plan ? `${fmtDate(plan.tradingDate)} • ${plan.asset}` : rule?.title || record.prompt}</b></div><button type="button" className="tiny danger" onClick={() => setState((current) => ({ ...current, trainingRecords: current.trainingRecords.filter((item) => item.id !== record.id) }))}>Remover</button></div><p><strong>Decisão/resposta:</strong> {record.decisionNow}</p>{record.interpretationNow && <p><strong>Interpretação:</strong> {record.interpretationNow}</p>}{record.comparisonNotes && <p><strong>Comparação/aprendizado:</strong> {record.comparisonNotes}</p>}<small>{fmtDateTime(record.createdAt)}</small></article>;
       })}</div> : <div className="empty">Os exercícios salvos aparecerão aqui para comparação longitudinal.</div>}
     </div>
   </section>;
+}
+
+function InfoTip({ label, children }: { label: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return <span className="info-tip">
+    <button type="button" className="info-tip-trigger" aria-label={label} aria-expanded={open} onClick={() => setOpen((value) => !value)}>i</button>
+    {open && <span className="info-tip-popover" role="note">{typeof children === "string" ? translateUi(children, activeLanguage) : children}</span>}
+  </span>;
 }
 
 function SettingsPage({ state, setState }: { state: AppState; setState: React.Dispatch<React.SetStateAction<AppState>> }) {
@@ -1884,7 +1926,7 @@ function SettingsPage({ state, setState }: { state: AppState; setState: React.Di
       if (!path) return;
       const preview = await previewDesktopBackup(path);
       if (!preview) return;
-      const next = parseBackup(preview);
+      const next = ensureDemoData(parseBackup(preview));
       if (!confirm(translateUi("Restaurar este backup substituirá os dados atuais do aplicativo. Deseja continuar?", activeLanguage))) return;
       const json = await restoreDesktopBackup(path);
       if (!json) return;
@@ -1900,7 +1942,7 @@ function SettingsPage({ state, setState }: { state: AppState; setState: React.Di
   async function importFile(file: File | undefined) {
     if (!file) return;
     try {
-      const next = parseBackup(await file.text());
+      const next = ensureDemoData(parseBackup(await file.text()));
       clearStorageLoadGuard();
       setState(next);
       setAssetsText(next.settings.assets.join(", "));
@@ -1922,7 +1964,7 @@ function SettingsPage({ state, setState }: { state: AppState; setState: React.Di
       localStorage.removeItem(STORAGE_KEY);
       if (!isDesktopApp()) await clearWebAttachmentStore();
       clearStorageLoadGuard();
-      const fresh = initialState();
+      const fresh = { ...initialState(), demoDataVersion: DEMO_DATA_VERSION };
       setState(fresh);
       setAssetsText(fresh.settings.assets.join(", "));
       setMessage("Dados locais apagados. No desktop, um backup de segurança foi criado antes da limpeza.");
@@ -1937,7 +1979,7 @@ function SettingsPage({ state, setState }: { state: AppState; setState: React.Di
   return <section className="page">
     <div className="page-heading"><div><span className="eyebrow">PREFERÊNCIAS E DADOS</span><h1>Configurações</h1><p>Os dados ficam localmente neste dispositivo. Use backups JSON para transportar ou restaurar regras, setups, planos, versões congeladas, revisões e imagens.</p></div></div>
     <div className="two-cols align-start">
-      <div className="panel"><h2>Padrões de planejamento</h2>
+      <div className="panel"><div className="panel-heading-with-info"><h2>Padrões de planejamento</h2><InfoTip label="Informações sobre os padrões de planejamento">Nesta área, defina os valores iniciais dos novos planos: ativos disponíveis, risco máximo e limite de operações. Eles são aplicados somente a planos criados depois; não alteram registros existentes. Nome do trader, tema, idioma e imagens são preferências gerais da aplicação.</InfoTip></div>
         <Field label="Nome do trader"><input value={settings.traderName} onChange={(e) => patch({ traderName: e.target.value })} placeholder="Opcional" /></Field>
         <Field label="Ativos disponíveis" hint="Separe os ativos por vírgula."><textarea rows={4} value={assetsText} onChange={(e) => setAssetsText(e.target.value)} onBlur={() => patch({ assets: assetsText.split(",").map((x) => x.trim().toUpperCase()).filter(Boolean) })} /></Field>
         <div className="form-grid two"><Field label="Risco máximo padrão"><input value={settings.defaultMaxRisk} onChange={(e) => patch({ defaultMaxRisk: e.target.value })} placeholder="Ex.: 2R" /></Field><Field label="Máx. de trades padrão"><input type="number" min={1} value={settings.defaultMaxTrades} onChange={(e) => patch({ defaultMaxTrades: Math.max(1, Number(e.target.value) || 1) })} /></Field></div>
@@ -1996,6 +2038,7 @@ export default function App() {
   activeLanguage = state.settings.language;
   activeLocale = localeForLanguage(activeLanguage);
   setInterfaceLanguage(activeLanguage);
+  const hasDemoItems = state.rules.some((item) => item.isDemo) || state.setups.some((item) => item.isDemo) || state.plans.some((item) => item.isDemo) || state.planTemplates.some((item) => item.isDemo) || state.studies.some((item) => item.isDemo) || state.journalTrades.some((item) => item.isDemo) || state.trainingRecords.some((item) => item.isDemo) || state.setupExamples.some((item) => item.isDemo);
 
   useEffect(() => {
     if (desktop) return;
@@ -2006,14 +2049,14 @@ export default function App() {
         if (!active) return;
         if (!json) {
           clearStorageLoadGuard();
-          setState(initialState());
+          setState(ensureDemoData(initialState()));
           setSaveError("");
           setWebLoadBlocked(false);
           setWebReady(true);
           return;
         }
 
-        const loaded = parseBackup(json);
+        const loaded = ensureDemoData(parseBackup(json));
         clearStorageLoadGuard();
         setState(loaded);
         setSaveError("");
@@ -2040,7 +2083,7 @@ export default function App() {
         if (!active) return;
 
         if (json) {
-          const loaded = parseBackup(json);
+          const loaded = ensureDemoData(parseBackup(json));
           setState(loaded);
           setSaveError("");
           setDesktopLoadBlocked(false);
@@ -2052,7 +2095,7 @@ export default function App() {
           throw new Error(startupLoad.error);
         }
 
-        const localState = startupLoad.state;
+        const localState = ensureDemoData(startupLoad.state);
         const serialized = serializeState(localState);
         const result = await saveDesktopState(serialized, isoDateLocal());
         if (!active) return;
@@ -2098,8 +2141,7 @@ export default function App() {
 
   const nav: Array<[Tab, string, string]> = [
     ["dashboard", "Visão geral", "⌂"],
-    ["rules", "Sistema de trade", "◆"],
-    ["setups", "Biblioteca de setups", "▦"],
+    ["system", "Sistema de trade", "◆"],
     ["plans", "Planos de trade", "▤"],
     ["studies", "Estudos", "▥"],
     ["history", "Histórico", "◫"],
@@ -2109,16 +2151,16 @@ export default function App() {
 
   return <div className="app-shell">
     <aside>
-      <div className="brand"><div className="brand-mark">TB</div><div><strong>Trade Blueprint</strong><span>preparar • congelar • executar • revisar</span></div></div>
+      <div className="brand"><div className="brand-mark"><img src="/trade-blueprint-mark.svg" alt="" /></div><div><strong>Trade Blueprint</strong><span>preparar • congelar • executar • revisar</span></div></div>
       <nav>{nav.map(([id, label, icon]) => <button key={id} className={tab === id ? "active" : ""} onClick={() => setTab(id)}><span>{icon}</span>{label}</button>)}</nav>
       <div className="sidebar-foot"><span>Dados locais</span><b>schema v{state.schemaVersion}</b></div>
     </aside>
     <main>
       <header><div><span className="mobile-title">Trade Blueprint</span></div><div className="save-state"><span className={saveError ? "bad" : "good"}></span>{saveError || "Salvamento local automático"}</div></header>
+      {hasDemoItems && <div className="demo-disclaimer">Itens marcados como <span className="badge demo">Exemplo</span> são fictícios e podem ser removidos individualmente.</div>}
       {saveError && (startupLoad.error || desktopLoadBlocked || webLoadBlocked) && <div className="storage-protection-banner"><div><b>Modo protegido de armazenamento</b><span>{saveError}</span></div><button onClick={() => setTab("settings")}>Abrir recuperação</button></div>}
-      <div hidden={tab !== "dashboard"}><Dashboard state={state} onOpenPlans={() => setTab("plans")} onOpenSetups={() => setTab("setups")} /></div>
-      <div hidden={tab !== "rules"}><RulesPage state={state} setState={setState} /></div>
-      <div hidden={tab !== "setups"}><SetupsPage state={state} setState={setState} /></div>
+      <div hidden={tab !== "dashboard"}><Dashboard state={state} onOpenPlans={() => setTab("plans")} onOpenSystem={() => setTab("system")} /></div>
+      <div hidden={tab !== "system"}><SystemPage state={state} setState={setState} /></div>
       <div hidden={tab !== "plans"}><PlansPage state={state} setState={setState} /></div>
       <div hidden={tab !== "studies"}><StudiesPage state={state} setState={setState} /></div>
       <div hidden={tab !== "history"}><HistoryPage state={state} setState={setState} /></div>

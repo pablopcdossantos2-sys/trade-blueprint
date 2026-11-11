@@ -14,23 +14,17 @@ A ferramenta não pretende prever o mercado. Ela organiza o processo decisório 
 3. **O que farei se o cenário A, B ou C se materializar?**
 4. **Depois do pregão, o que o mercado fez, o que eu fiz e quanto respeitei o plano original?**
 
-## Funcionalidades atuais — v0.11
+## Funcionalidades atuais — v0.12
 
 ### Sistema de trade
 
-- regras de Entrada, Saída, Risco, Horário, Contexto e Comportamento;
-- justificativa para cada regra;
-- ativação/desativação;
-- imagens explicativas.
+A seção reúne, em uma única tela, duas partes complementares do método:
 
-### Biblioteca de setups
+- **Regras gerais:** limites de Entrada, Saída, Risco, Horário, Contexto e Comportamento, com justificativa, ativação/desativação e imagens;
+- **Setups operacionais:** padrões reutilizáveis com contexto, critérios de entrada, confirmação, invalidação, stop, gestão, situações a evitar e cuidados comportamentais;
+- aplicação de um setup ao cenário A de um plano.
 
-- padrões operacionais reutilizáveis;
-- contexto ideal, critérios de entrada, confirmação e invalidação;
-- modelos de stop e alvo/gestão;
-- situações a evitar e cuidados comportamentais;
-- imagens;
-- aplicação de setup ao cenário A de um plano.
+A primeira utilização inclui registros fictícios identificados com o selo **Exemplo**. Cada exemplo pode ser removido individualmente.
 
 ### Planos de trade
 
@@ -83,7 +77,7 @@ Um estudo pode registrar:
 - gráficos e imagens;
 - status **Em andamento** ou **Concluído**.
 
-### Histórico e padrões
+### Histórico
 
 A seção **Histórico** reúne o aprendizado acumulado:
 
@@ -236,8 +230,3 @@ npm run build
 
 A compilação e geração do instalador desktop exigem ferramentas adicionais. Consulte [`docs/DESKTOP.md`](docs/DESKTOP.md) somente se você pretende desenvolver ou empacotar o aplicativo.
 
-## Documentação
-
-- [`docs/PRODUCT-SPEC.md`](docs/PRODUCT-SPEC.md) — especificação funcional;
-- [`docs/ROADMAP.md`](docs/ROADMAP.md) — fases concluídas e próximas evoluções;
-- [`docs/DESKTOP.md`](docs/DESKTOP.md) — compilação desktop, instalador e atualizações.

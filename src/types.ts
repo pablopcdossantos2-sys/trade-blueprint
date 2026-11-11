@@ -16,6 +16,7 @@ export type RuleCategory =
 
 export type TradeRule = {
   id: string;
+  isDemo?: boolean;
   title: string;
   category: RuleCategory;
   description: string;
@@ -41,6 +42,7 @@ export type Scenario = {
 
 export type TradeSetup = {
   id: string;
+  isDemo?: boolean;
   title: string;
   description: string;
   marketContext: string;
@@ -110,6 +112,7 @@ export type PlanSnapshot = {
 
 export type TradePlan = {
   id: string;
+  isDemo?: boolean;
   sessionId: string;
   planDate: string;
   tradingDate: string;
@@ -139,6 +142,7 @@ export type TradePlan = {
 
 export type PlanTemplate = {
   id: string;
+  isDemo?: boolean;
   title: string;
   asset: string;
   setupId?: string;
@@ -162,6 +166,7 @@ export type PlanTemplate = {
 
 export type JournalTrade = {
   id: string;
+  isDemo?: boolean;
   externalId: string;
   tradingDate: string;
   asset: string;
@@ -182,6 +187,7 @@ export type JournalTrade = {
 
 export type TrainingRecord = {
   id: string;
+  isDemo?: boolean;
   type: "replay" | "revisit" | "error";
   planId?: string;
   setupId?: string;
@@ -196,6 +202,7 @@ export type TrainingRecord = {
 
 export type SetupExample = {
   id: string;
+  isDemo?: boolean;
   setupId: string;
   planId: string;
   classification: "Correto" | "Incorreto";
@@ -205,6 +212,7 @@ export type SetupExample = {
 
 export type TradeStudy = {
   id: string;
+  isDemo?: boolean;
   title: string;
   studyDate: string;
   referenceDate: string;
@@ -240,6 +248,7 @@ export type Settings = {
 
 export type AppState = {
   schemaVersion: number;
+  demoDataVersion?: number;
   // Em memória fica vazio após a hidratação; no JSON persistido contém uma cópia
   // única de cada imagem, indexada pelo id do Attachment.
   attachmentData: Record<string, string>;

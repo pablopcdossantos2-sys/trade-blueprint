@@ -161,3 +161,16 @@
 - [x] Substituir a tradução baseada em `MutationObserver` por internacionalização declarativa no React, aplicada no runtime JSX durante a renderização sem reescrever o DOM.
 - [x] Revisar a galeria para abrir imagens via Blob/Object URL no WebView2, com revogação automática ao fechar a visualização.
 - [x] Adicionar testes automatizados para importação CSV/JSON, datas, migrações, deduplicação de imagens, retenção de backups e proteção contra perda de dados.
+
+
+## Fase 9 — Simplificação do fluxo de uso
+
+- [x] Reunir regras gerais e setups operacionais na seção principal **Sistema de trade**, preservando as duas categorias e todos os vínculos existentes.
+- [x] Explicar por que regras gerais e setups são partes complementares, sem duplicar cadastros nem exigir navegação entre áreas separadas.
+- [x] Adicionar informação contextual clicável aos padrões usados como ponto de partida na criação de planos.
+- [x] Substituir títulos de efeito por títulos objetivos e subtítulos que descrevem a tarefa de cada seção.
+- [x] Incluir registros fictícios identificados como **Exemplo** nas áreas de dados, com exclusão individual.
+- [x] Inserir os exemplos apenas uma vez por instalação/estado, sem recriá-los após a exclusão deliberada.
+- [x] Criar uma identidade visual única para o ícone da aplicação, o menu e o favicon.
+- [x] Remover a seção **Documentação** dos READMEs em português, inglês e espanhol.
+- [ ] Validar tipagem, testes, build web e empacotamento Windows após as alterações.
