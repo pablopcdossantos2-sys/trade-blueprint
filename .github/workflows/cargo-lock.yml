@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -20,7 +20,7 @@ jobs:
         run: cargo generate-lockfile --manifest-path src-tauri/Cargo.toml
 
       - name: Upload proposed Cargo.lock
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: trade-blueprint-cargo-lock-proposal
           path: src-tauri/Cargo.lock
