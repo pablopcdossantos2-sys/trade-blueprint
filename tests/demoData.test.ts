@@ -12,8 +12,8 @@ test("insere um exemplo identificável em cada área de registro", () => {
   assert.ok(seeded.plans.some((item) => item.isDemo));
   assert.ok(seeded.planTemplates.some((item) => item.isDemo));
   assert.ok(seeded.journalTrades.some((item) => item.isDemo));
-  assert.ok(seeded.trainingRecords.some((item) => item.isDemo));
-  assert.ok(seeded.setupExamples.some((item) => item.isDemo));
+  assert.equal(seeded.trainingRecords.some((item) => item.isDemo), false);
+  assert.equal(seeded.setupExamples.some((item) => item.isDemo), false);
   assert.ok(seeded.studies.some((item) => item.isDemo));
 
   const historicalPlan = seeded.plans.find((item) => item.isDemo && item.review.reviewedAt);
@@ -64,4 +64,35 @@ test("preserva registros reais ao acrescentar os exemplos", () => {
   assert.equal(seeded.rules.find((item) => item.id === realRule.id)?.title, realRule.title);
   assert.equal(seeded.rules.filter((item) => !item.isDemo).length, 1);
   assert.equal(seeded.rules.filter((item) => item.isDemo).length, 1);
+});
+
+
+test("preserva registros legados de treinamento sem criar novos exemplos", () => {
+  const state = initialState();
+  const legacyTraining = {
+    id: "legacy-training-1",
+    type: "revisit" as const,
+    prompt: "Registro antigo",
+    decisionNow: "Aguardar",
+    interpretationNow: "Confirmar",
+    comparisonNotes: "Revisar depois",
+    createdAt: "2026-01-02T12:00:00.000Z",
+  };
+  const legacySetupExample = {
+    id: "legacy-setup-example-1",
+    setupId: "legacy-setup",
+    planId: "legacy-plan",
+    classification: "Correto" as const,
+    notes: "Exemplo antigo",
+    createdAt: "2026-01-02T12:00:00.000Z",
+  };
+  state.trainingRecords.push(legacyTraining);
+  state.setupExamples.push(legacySetupExample);
+
+  const seeded = ensureDemoData(state);
+
+  assert.deepEqual(seeded.trainingRecords, [legacyTraining]);
+  assert.deepEqual(seeded.setupExamples, [legacySetupExample]);
+  assert.equal(seeded.trainingRecords.some((item) => item.isDemo), false);
+  assert.equal(seeded.setupExamples.some((item) => item.isDemo), false);
 });
