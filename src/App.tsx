@@ -34,15 +34,13 @@ import type {
   PlanSnapshot,
   RuleCategory,
   Scenario,
-  SetupExample,
-  TrainingRecord,
   TradePlan,
   TradeRule,
   TradeSetup,
   TradeStudy,
 } from "./types";
 
-type Tab = "dashboard" | "system" | "planning" | "history" | "training" | "settings";
+type Tab = "dashboard" | "system" | "planning" | "history" | "settings";
 
 const ruleCategories: RuleCategory[] = ["Entrada", "Saída", "Risco", "Horário", "Contexto", "Comportamento", "Outro"];
 const defaultChecklist = [
@@ -397,7 +395,7 @@ function Dashboard({ state, onOpenPlans, onOpenSystem }: { state: AppState; onOp
   return <section className="page">
     <div className="hero">
       <div>
-        <span className="eyebrow">PREPARAÇÃO ANTES DA EXECUÇÃO</span>
+        
         <h1>Preparação do pregão</h1>
         <p>Organize seu sistema de trade, registre o plano antes da abertura e revise o que aconteceu depois da sessão.</p>
       </div>
@@ -414,14 +412,14 @@ function Dashboard({ state, onOpenPlans, onOpenSystem }: { state: AppState; onOp
 
     <div className="two-cols">
       <div className="panel">
-        <div className="panel-title"><div><span className="eyebrow">AGENDA</span><h2>Próximos planos</h2></div></div>
+        <div className="panel-title"><div><h2>Próximos planos</h2></div></div>
         {upcoming.length ? <div className="list">{upcoming.map((p) => <div className="list-row" key={p.id}>
           <div><strong>{p.asset}</strong><span>{fmtDate(p.tradingDate)} • viés {p.bias.toLowerCase()} • {p.versions.length ? `v${p.versions.length}` : "sem versão de referência"}</span></div>
           <div className="badges">{p.isDemo && <span className="badge demo">Exemplo</span>}<span className={`badge ${p.review.reviewedAt ? "ok" : p.planStatus === "frozen" ? "locked" : ""}`}>{p.review.reviewedAt ? "revisado" : p.planStatus === "frozen" ? "versão registrada" : "rascunho"}</span></div>
         </div>)}</div> : <div className="empty">Nenhum plano futuro. Crie o primeiro plano para o próximo pregão.</div>}
       </div>
       <div className="panel">
-        <span className="eyebrow">MÉTODO</span><h2>Ciclo recomendado</h2>
+        <h2>Ciclo recomendado</h2>
         <ol className="cycle">
           <li><b>Setup + contexto</b><span>Use um padrão conhecido sem ignorar as condições particulares do dia.</span></li>
           <li><b>Contraprova</b><span>Procure evidências contra sua tese antes de defendê-la.</span></li>
@@ -454,7 +452,7 @@ function RulesPage({ state, setState, embedded = false }: { state: AppState; set
   }
 
   return <section className={embedded ? "system-subpage" : "page"}>
-    {embedded ? <div className="system-group-heading"><h2>Regras gerais</h2><p>Limites de risco, horários, entradas, saídas e comportamento que valem para todas as operações.</p></div> : <div className="page-heading"><div><span className="eyebrow">REGRAS GERAIS</span><h1>Regras gerais</h1><p>Defina limites de risco, horários, entradas, saídas e comportamento que valem para todas as operações.</p></div></div>}
+    {embedded ? <div className="system-group-heading"><h2>Regras gerais</h2><p>Limites de risco, horários, entradas, saídas e comportamento que valem para todas as operações.</p></div> : <div className="page-heading"><div><h1>Regras gerais</h1><p>Defina limites de risco, horários, entradas, saídas e comportamento que valem para todas as operações.</p></div></div>}
     <div className="panel form-panel"><h2>{editing ? "Editar regra" : "Adicionar regra"}</h2>
       <div className="form-grid">
         <Field label="Nome da regra"><input value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} placeholder="Ex.: Não aumentar stop após entrar" /></Field>
@@ -514,7 +512,7 @@ function SetupsPage({ state, setState, embedded = false }: { state: AppState; se
   }
 
   return <section className={embedded ? "system-subpage" : "page"}>
-    {embedded ? <div className="system-group-heading"><h2>Setups operacionais</h2><p>Descreva os contextos e critérios específicos de entrada, confirmação, stop e invalidação.</p></div> : <div className="page-heading"><div><span className="eyebrow">PADRÕES OPERACIONAIS</span><h1>Setups operacionais</h1><p>Descreva os padrões específicos de entrada, com contexto, confirmação e invalidação.</p></div></div>}
+    {embedded ? <div className="system-group-heading"><h2>Setups operacionais</h2><p>Descreva os contextos e critérios específicos de entrada, confirmação, stop e invalidação.</p></div> : <div className="page-heading"><div><h1>Setups operacionais</h1><p>Descreva os padrões específicos de entrada, com contexto, confirmação e invalidação.</p></div></div>}
     <div className="panel form-panel">
       <h2>{editingId ? "Editar setup" : "Novo setup"}</h2>
       <div className="form-grid two">
@@ -562,7 +560,7 @@ function SystemPage({ state, setState }: { state: AppState; setState: React.Disp
   return <section className="page system-page">
     <div className="page-heading">
       <div>
-        <span className="eyebrow">REGRAS E PADRÕES OPERACIONAIS</span>
+        
         <h1>Sistema de trade</h1>
         <p>Registre em uma única página as regras que se aplicam a todas as operações e os setups específicos que orientam suas entradas.</p>
       </div>
@@ -620,7 +618,7 @@ function ComparisonPanel({ plan }: { plan: TradePlan }) {
 
   return <div className="comparison-wrap">
     <div className="comparison-heading">
-      <div><span className="eyebrow">COMPARADOR</span><h3>Planejado × Mercado real × Minha execução</h3></div>
+      <div><h3>Planejado × Mercado real × Minha execução</h3></div>
       <span className={`badge ${frozen ? "locked" : "warning"}`}>{frozen ? `Versão de referência v${frozen.version}` : "Sem versão de referência"}</span>
     </div>
     {!frozen && <div className="review-callout warning-callout">Ainda não existe uma versão de referência salva. O comparador usa o rascunho atual como base; depois de registrar uma versão antes do pregão, ela ficará preservada para comparar o que você planejou com o que realmente aconteceu.</div>}
@@ -741,7 +739,7 @@ function PlanEditor({ initial, assets, setups, rules, onPersist, onCreateTemplat
 
   return <div className="panel plan-editor">
     <div className="editor-head">
-      <div><span className="eyebrow">{draft.versions.length ? `PLANO COM ${draft.versions.length} VERSÃO(ÕES) REGISTRADA(S)` : "PLANO EM CONSTRUÇÃO"}</span><h2>{draft.asset || "Ativo"} • {fmtDate(draft.tradingDate)}</h2></div>
+      <div><h2>{draft.asset || "Ativo"} • {fmtDate(draft.tradingDate)}</h2></div>
       <div className="segmented"><button className={section === "plan" ? "active" : ""} onClick={() => setSection("plan")}>Planejamento</button><button className={section === "review" ? "active" : ""} onClick={() => setSection("review")}>Comparar e revisar</button></div>
     </div>
 
@@ -892,7 +890,7 @@ function StudyEditor({ initial, assets, setups, onSave, onClose }: {
 
   return <div className="panel plan-editor">
     <div className="editor-head">
-      <div><span className="eyebrow">OPORTUNIDADE FUTURA</span><h2>{draft.title || "Nova oportunidade"}</h2><p>Registre uma situação de mercado que você poderá operar futuramente. Quando decidir preparar a entrada, crie um plano de pregão a partir desta análise.</p></div>
+      <div><h2>{draft.title || "Nova oportunidade"}</h2><p>Registre uma situação de mercado que você poderá operar futuramente. Quando decidir preparar a entrada, crie um plano de pregão a partir desta análise.</p></div>
       <span className={`badge ${draft.status === "completed" ? "ok" : "warning"}`}>{draft.status === "completed" ? "Concluído" : "Em andamento"}</span>
     </div>
 
@@ -1067,7 +1065,7 @@ function PlanningPage({ state, setState }: { state: AppState; setState: React.Di
   return <section className="page planning-page">
     <div className="page-heading planning-heading">
       <div>
-        <span className="eyebrow">PLANOS E OPORTUNIDADES</span>
+        
         <h1>Planejamento de trades</h1>
         <p>Organize os planos dos pregões e acompanhe oportunidades que você poderá transformar em operações futuras.</p>
       </div>
@@ -1097,7 +1095,7 @@ function PlanningPage({ state, setState }: { state: AppState; setState: React.Di
     </details>
 
     {!!state.planTemplates.length && <div className="panel template-panel">
-      <div className="panel-title"><div><span className="eyebrow">REUTILIZAR PREPARAÇÃO</span><h2>Modelos de plano</h2></div></div>
+      <div className="panel-title"><div><h2>Modelos de plano</h2></div></div>
       <p className="muted-text">Use um modelo como ponto de partida. O novo plano será independente e deverá ser adaptado ao contexto da sessão.</p>
       <div className="template-list">{state.planTemplates.map((template) => <div className="template-row" key={template.id}>
         <div><b>{template.title}</b>{template.isDemo && <span className="badge demo">Exemplo</span>}<span>{template.asset || "Qualquer ativo"} • {template.setupId ? "com setup de referência" : "sem setup de referência"}</span></div>
@@ -1495,7 +1493,7 @@ function JournalIntegration({ state, setState }: { state: AppState; setState: Re
     .sort((a, b) => b.tradingDate.localeCompare(a.tradingDate));
 
   return <div className="panel journal-panel">
-    <div className="history-section-title"><div><span className="eyebrow">INTEGRAÇÃO COM DIÁRIO</span><h2>Execuções importadas</h2></div><button className="primary" onClick={() => fileRef.current?.click()}>Importar JSON/CSV</button></div>
+    <div className="history-section-title"><div><h2>Execuções importadas</h2></div><button className="primary" onClick={() => fileRef.current?.click()}>Importar JSON/CSV</button></div>
     <input ref={fileRef} hidden type="file" accept=".json,.csv,text/csv,application/json" onChange={(e) => { void importFile(e.target.files?.[0]); e.currentTarget.value = ""; }} />
     <p className="muted-text">O importador aceita nomes de colunas comuns em português ou inglês. Data e ativo são obrigatórios. Quando existir exatamente um plano para a mesma data e ativo, o vínculo é criado automaticamente.</p>
     {message && <div className="notice">{message}</div>}
@@ -1507,7 +1505,7 @@ function JournalIntegration({ state, setState }: { state: AppState; setState: Re
       return <tr key={trade.id}><td>{fmtDate(trade.tradingDate)}</td><td><b>{trade.asset}</b>{trade.isDemo && <span className="badge demo">Exemplo</span>}<small>{trade.side}</small></td><td><span>{[trade.entryTime, trade.entryPrice].filter(Boolean).join(" @ ") || "—"}</span><small>{[trade.exitTime, trade.exitPrice].filter(Boolean).join(" @ ")}</small></td><td>{trade.result || "—"}</td><td><select value={trade.planId ?? ""} onChange={(e) => linkPlan(trade, e.target.value)}><option value="">Sem vínculo</option>{state.plans.map((plan) => <option key={plan.id} value={plan.id}>{plan.asset} • {fmtDate(plan.tradingDate)}</option>)}</select></td><td><select value={trade.scenarioLabel} disabled={!linkedPlan} onChange={(e) => patchTrade(trade.id, { scenarioLabel: e.target.value as JournalTrade["scenarioLabel"] })}><option value="">—</option><option>A</option><option>B</option><option>C</option></select>{linkedPlan && !tradeHasPreplannedScenario(trade, linkedPlan) && <small className="warning-text">Não corresponde a cenário previamente definido.</small>}</td><td><button className="tiny danger" onClick={() => setState((current) => ({ ...current, journalTrades: current.journalTrades.filter((item) => item.id !== trade.id) }))}>Remover</button></td></tr>;
     })}</tbody></table></div>}
 
-    <div className="history-section-title journal-report-title"><div><span className="eyebrow">PROCESSO + RESULTADO</span><h3>Planejei × operei × registrei</h3></div></div>
+    <div className="history-section-title journal-report-title"><div><h3>Planejei × operei × registrei</h3></div></div>
     {reportPlans.length ? <div className="joint-report">{reportPlans.slice(0, 50).map((plan) => {
       const trades = state.journalTrades.filter((trade) => trade.planId === plan.id);
       const operated = !!plan.review.executionSummary || trades.length > 0;
@@ -1658,7 +1656,7 @@ function HistoryPage({ state, setState }: { state: AppState; setState: React.Dis
       : ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 
   return <section className="page history-page">
-    <div className="page-heading"><div><span className="eyebrow">CONSULTA E MÉTRICAS</span><h1>Histórico</h1><p>Consulte revisões, aderência, execuções e métricas de preparação ao longo do tempo.</p></div></div>
+    <div className="page-heading"><div><h1>Histórico</h1><p>Consulte revisões, aderência, execuções e métricas de preparação ao longo do tempo.</p></div></div>
 
     <div className="panel history-filters">
       <h2>Filtros</h2>
@@ -1674,7 +1672,7 @@ function HistoryPage({ state, setState }: { state: AppState; setState: React.Dis
     </div>
 
     <div className="panel calendar-panel">
-      <div className="history-section-title"><div><span className="eyebrow">CALENDÁRIO</span><h2>Pregões planejados e revisados</h2></div><div className="calendar-nav"><button onClick={() => setCalendarMonth((month) => shiftMonth(month, -1))}>‹</button><b>{monthLabel(calendarMonth)}</b><button onClick={() => setCalendarMonth((month) => shiftMonth(month, 1))}>›</button></div></div>
+      <div className="history-section-title"><div><h2>Pregões planejados e revisados</h2></div><div className="calendar-nav"><button onClick={() => setCalendarMonth((month) => shiftMonth(month, -1))}>‹</button><b>{monthLabel(calendarMonth)}</b><button onClick={() => setCalendarMonth((month) => shiftMonth(month, 1))}>›</button></div></div>
       <div className="calendar-grid">{weekdays.map((day) => <div className="calendar-weekday" key={day}>{day}</div>)}{calendarCells(calendarMonth).map((date, index) => {
         if (!date) return <div className="calendar-day empty-day" key={`empty-${index}`} />;
         const dayPlans = plansByDate.get(date) || [];
@@ -1684,23 +1682,23 @@ function HistoryPage({ state, setState }: { state: AppState; setState: React.Dis
     </div>
 
     <div className="history-metrics-grid">
-      <div className="panel"><span className="eyebrow">ADERÊNCIA</span><h2>Por setup</h2>{setupStats.length ? <div className="metric-list">{setupStats.map((item) => <div className="metric-row" key={item.id}><div><b>{item.title}</b><span>{item.total} revisão(ões) • {item.partial} parcial(is) • {item.no} não</span></div><strong>{item.total ? Math.round(item.yes / item.total * 100) : 0}%</strong></div>)}</div> : <div className="empty">Ainda não há revisões suficientes neste recorte.</div>}</div>
+      <div className="panel"><h2>Por setup</h2>{setupStats.length ? <div className="metric-list">{setupStats.map((item) => <div className="metric-row" key={item.id}><div><b>{item.title}</b><span>{item.total} revisão(ões) • {item.partial} parcial(is) • {item.no} não</span></div><strong>{item.total ? Math.round(item.yes / item.total * 100) : 0}%</strong></div>)}</div> : <div className="empty">Ainda não há revisões suficientes neste recorte.</div>}</div>
 
-      <div className="panel"><span className="eyebrow">DISCIPLINA</span><h2>Regras mais violadas</h2>{violationStats.length ? <div className="metric-list">{violationStats.map((item) => <div className="metric-row" key={item.id}><div><b>{item.title}</b><span>{item.category}</span></div><strong>{item.count}×</strong></div>)}</div> : <div className="empty">Nenhuma violação estruturada registrada neste recorte.</div>}</div>
+      <div className="panel"><h2>Regras mais violadas</h2>{violationStats.length ? <div className="metric-list">{violationStats.map((item) => <div className="metric-row" key={item.id}><div><b>{item.title}</b><span>{item.category}</span></div><strong>{item.count}×</strong></div>)}</div> : <div className="empty">Nenhuma violação estruturada registrada neste recorte.</div>}</div>
 
-      <div className="panel"><span className="eyebrow">ORIGEM DA EXECUÇÃO</span><h2>Planejado × improvisado</h2><div className="origin-grid"><div><strong>{originStats.planejada}</strong><span>Planejada</span></div><div><strong>{originStats.parcial}</strong><span>Parcial</span></div><div><strong>{originStats.improvisada}</strong><span>Improvisada</span></div><div><strong>{originStats.naoClassificada}</strong><span>Não classificada</span></div></div></div>
+      <div className="panel"><h2>Planejado × improvisado</h2><div className="origin-grid"><div><strong>{originStats.planejada}</strong><span>Planejada</span></div><div><strong>{originStats.parcial}</strong><span>Parcial</span></div><div><strong>{originStats.improvisada}</strong><span>Improvisada</span></div><div><strong>{originStats.naoClassificada}</strong><span>Não classificada</span></div></div></div>
 
-      <div className="panel"><span className="eyebrow">QUALIDADE</span><h2>Leitura × execução</h2><div className="quality-pair"><div><strong>{readingAverage ? readingAverage.toFixed(1) : "—"}</strong><span>leitura média / 5</span></div><div><strong>{executionAverage ? executionAverage.toFixed(1) : "—"}</strong><span>execução média / 5</span></div></div>{qualityPlans.length ? <div className="quality-history">{[...qualityPlans].sort((a, b) => b.tradingDate.localeCompare(a.tradingDate)).slice(0, 12).map((plan) => <div key={plan.id}><span>{fmtDate(plan.tradingDate)} • {plan.asset}</span><b>{plan.review.readingQuality || "—"} / {plan.review.executionQuality || "—"}</b></div>)}</div> : <div className="empty">Avalie leitura e execução nas revisões para formar este histórico.</div>}</div>
+      <div className="panel"><h2>Leitura × execução</h2><div className="quality-pair"><div><strong>{readingAverage ? readingAverage.toFixed(1) : "—"}</strong><span>leitura média / 5</span></div><div><strong>{executionAverage ? executionAverage.toFixed(1) : "—"}</strong><span>execução média / 5</span></div></div>{qualityPlans.length ? <div className="quality-history">{[...qualityPlans].sort((a, b) => b.tradingDate.localeCompare(a.tradingDate)).slice(0, 12).map((plan) => <div key={plan.id}><span>{fmtDate(plan.tradingDate)} • {plan.asset}</span><b>{plan.review.readingQuality || "—"} / {plan.review.executionQuality || "—"}</b></div>)}</div> : <div className="empty">Avalie leitura e execução nas revisões para formar este histórico.</div>}</div>
     </div>
 
     <div className="panel history-search">
-      <div className="history-section-title"><div><span className="eyebrow">BUSCA TEXTUAL</span><h2>Planos, regras e setups</h2></div><span>{searchResults.length} resultado(s)</span></div>
+      <div className="history-section-title"><div><h2>Planos, regras e setups</h2></div><span>{searchResults.length} resultado(s)</span></div>
       <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Pesquise contexto, erro, regra, setup, aprendizado, nível, cenário…" />
       {search.trim() ? (searchResults.length ? <div className="search-results">{searchResults.map((item) => <article key={item.id}><span className="badge">{item.type}</span><div><b>{item.title}</b><p>{item.excerpt || "Correspondência encontrada."}</p></div></article>)}</div> : <div className="empty">Nenhuma correspondência encontrada.</div>) : <p className="muted-text">Digite um termo para procurar em planos, revisões, regras e setups.</p>}
     </div>
 
     <div className="panel gallery-panel">
-      <div className="history-section-title"><div><span className="eyebrow">GALERIA</span><h2>Imagens históricas</h2></div><span>{gallery.length} imagem(ns)</span></div>
+      <div className="history-section-title"><div><h2>Imagens históricas</h2></div><span>{gallery.length} imagem(ns)</span></div>
       {gallery.length ? <div className="history-gallery">{gallery.map((item) => <figure key={item.id}><button type="button" className="gallery-preview-button" onClick={() => setGalleryPreview(item)}><img src={item.src} alt={item.name} /></button><figcaption><b>{item.source}</b><span>{item.date ? fmtDate(item.date) : item.name}</span></figcaption></figure>)}</div> : <div className="empty">Ainda não existem imagens para compor a galeria histórica.</div>}
     </div>
 
@@ -1715,233 +1713,6 @@ function HistoryPage({ state, setState }: { state: AppState; setState: React.Dis
   </section>;
 }
 
-
-function frozenReference(plan: TradePlan) {
-  return latestFrozenVersion(plan) ?? currentReference(plan);
-}
-
-function TrainingPage({ state, setState }: { state: AppState; setState: React.Dispatch<React.SetStateAction<AppState>> }) {
-  const replayCandidates = useMemo(
-    () => state.plans.filter((plan) => plan.versions.length > 0).sort((a, b) => b.tradingDate.localeCompare(a.tradingDate)),
-    [state.plans],
-  );
-  const lowAdherence = useMemo(
-    () => state.plans.filter((plan) => !!plan.review.reviewedAt && (plan.review.followedPlan === "Parcialmente" || plan.review.followedPlan === "Não")).sort((a, b) => b.tradingDate.localeCompare(a.tradingDate)),
-    [state.plans],
-  );
-
-  const violationStats = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const plan of state.plans) {
-      if (plan.isDemo) continue;
-      for (const ruleId of plan.review.violatedRuleIds) counts.set(ruleId, (counts.get(ruleId) || 0) + 1);
-    }
-    return [...counts.entries()]
-      .map(([ruleId, count]) => ({ ruleId, count, rule: state.rules.find((rule) => rule.id === ruleId) }))
-      .filter((item) => !!item.rule)
-      .sort((a, b) => b.count - a.count);
-  }, [state.plans, state.rules]);
-
-  const [selectedPlanId, setSelectedPlanId] = useState("");
-  const [trainingType, setTrainingType] = useState<TrainingRecord["type"]>("replay");
-  const [decisionNow, setDecisionNow] = useState("");
-  const [interpretationNow, setInterpretationNow] = useState("");
-  const [comparisonNotes, setComparisonNotes] = useState("");
-  const [revealed, setRevealed] = useState(false);
-  const [trainingMessage, setTrainingMessage] = useState("");
-
-  const [selectedRuleId, setSelectedRuleId] = useState("");
-  const [errorDecision, setErrorDecision] = useState("");
-  const [errorLesson, setErrorLesson] = useState("");
-
-  const setupPlans = useMemo(
-    () => state.plans.filter((plan) => !!plan.setupId && !!plan.review.reviewedAt).sort((a, b) => b.tradingDate.localeCompare(a.tradingDate)),
-    [state.plans],
-  );
-  const [examplePlanId, setExamplePlanId] = useState("");
-  const [exampleClass, setExampleClass] = useState<SetupExample["classification"]>("Correto");
-  const [exampleNotes, setExampleNotes] = useState("");
-
-  const selectedPlan = state.plans.find((plan) => plan.id === selectedPlanId);
-  const reference = selectedPlan ? frozenReference(selectedPlan) : null;
-  const selectedRule = state.rules.find((rule) => rule.id === selectedRuleId);
-
-  function beginReplay(planId: string, type: TrainingRecord["type"] = "replay") {
-    setSelectedPlanId(planId);
-    setTrainingType(type);
-    setDecisionNow("");
-    setInterpretationNow("");
-    setComparisonNotes("");
-    setRevealed(false);
-    setTrainingMessage("");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  function revealOutcome() {
-    if (!decisionNow.trim() || !interpretationNow.trim()) {
-      setTrainingMessage("Registre primeiro sua decisão e sua interpretação atuais antes de revelar o que aconteceu.");
-      return;
-    }
-    setRevealed(true);
-    setTrainingMessage("");
-  }
-
-  function saveReplay() {
-    if (!selectedPlan || !decisionNow.trim() || !interpretationNow.trim() || !revealed) return;
-    const record: TrainingRecord = {
-      id: crypto.randomUUID(),
-      type: trainingType,
-      planId: selectedPlan.id,
-      setupId: selectedPlan.setupId,
-      prompt: trainingType === "revisit"
-        ? "Revisitar um plano com baixa aderência e formular a decisão que eu tomaria hoje."
-        : "Reexaminar uma versão de referência sem conhecer o desfecho e registrar uma nova decisão.",
-      decisionNow: decisionNow.trim(),
-      interpretationNow: interpretationNow.trim(),
-      comparisonNotes: comparisonNotes.trim(),
-      createdAt: new Date().toISOString(),
-      completedAt: revealed ? new Date().toISOString() : undefined,
-    };
-    setState((current) => ({ ...current, trainingRecords: [record, ...current.trainingRecords] }));
-    setTrainingMessage("Exercício salvo no histórico de treinamento.");
-  }
-
-  function saveErrorExercise() {
-    if (!selectedRule || !errorDecision.trim()) return;
-    const record: TrainingRecord = {
-      id: crypto.randomUUID(),
-      type: "error",
-      ruleId: selectedRule.id,
-      prompt: `Como reconhecer e interromper uma nova violação da regra: ${selectedRule.title}?`,
-      decisionNow: errorDecision.trim(),
-      interpretationNow: selectedRule.rationale,
-      comparisonNotes: errorLesson.trim(),
-      createdAt: new Date().toISOString(),
-      completedAt: new Date().toISOString(),
-    };
-    setState((current) => ({ ...current, trainingRecords: [record, ...current.trainingRecords] }));
-    setErrorDecision("");
-    setErrorLesson("");
-  }
-
-  function saveSetupExample() {
-    const plan = state.plans.find((item) => item.id === examplePlanId);
-    if (!plan?.setupId) return;
-    const existing = state.setupExamples.find((item) => item.planId === plan.id && item.setupId === plan.setupId);
-    const example: SetupExample = {
-      id: existing?.id ?? crypto.randomUUID(),
-      setupId: plan.setupId,
-      planId: plan.id,
-      classification: exampleClass,
-      notes: exampleNotes.trim(),
-      createdAt: existing?.createdAt ?? new Date().toISOString(),
-    };
-    setState((current) => ({
-      ...current,
-      setupExamples: existing
-        ? current.setupExamples.map((item) => item.id === example.id ? example : item)
-        : [example, ...current.setupExamples],
-    }));
-    setExampleNotes("");
-  }
-
-  return <section className="page training-page">
-    <div className="page-heading"><div><span className="eyebrow">TREINAMENTO DELIBERADO</span><h1>Treinamento de decisões</h1><p>Pratique a leitura de planos anteriores antes de rever o desfecho e treine a correção de erros recorrentes.</p></div></div>
-
-    <div className="training-layout">
-      <div className="panel replay-selector">
-        <span className="eyebrow">REPLAY</span><h2>Escolha um plano com versão de referência</h2>
-        <p className="muted-text">O resultado do pregão fica oculto até você escrever sua decisão e interpretação atuais.</p>
-        <select value={selectedPlanId} onChange={(e) => beginReplay(e.target.value, "replay")}>
-          <option value="">Selecione um plano</option>
-          {replayCandidates.map((plan) => <option key={plan.id} value={plan.id}>{fmtDate(plan.tradingDate)} • {plan.asset} • v{plan.versions.length}{plan.isDemo ? " • Exemplo" : ""}</option>)}
-        </select>
-        {!replayCandidates.length && <div className="empty">Registre uma versão de referência antes do pregão para formar material de Replay.</div>}
-      </div>
-
-      <div className="panel">
-        <span className="eyebrow">BAIXA ADERÊNCIA</span><h2>Planos para revisitar</h2>
-        {lowAdherence.length ? <div className="training-list">{lowAdherence.slice(0, 10).map((plan) => <div key={plan.id}><div><b>{fmtDate(plan.tradingDate)} • {plan.asset}</b>{plan.isDemo && <span className="badge demo">Exemplo</span>}<span>{plan.review.followedPlan} • {state.setups.find((setup) => setup.id === plan.setupId)?.title || "Sem setup"}</span></div><button onClick={() => beginReplay(plan.id, "revisit")}>Revisitar</button></div>)}</div> : <div className="empty">Nenhum plano revisado com aderência parcial ou negativa.</div>}
-      </div>
-    </div>
-
-    {selectedPlan && reference && <div className="panel replay-workspace">
-      <div className="history-section-title"><div><span className="eyebrow">{trainingType === "revisit" ? "REVISITA" : "REPLAY SEM DESFECHO"}</span><h2>{selectedPlan.asset} • {fmtDate(selectedPlan.tradingDate)}</h2></div><span className="badge locked">Versão de referência v{reference.version}</span></div>
-
-      <div className="replay-frozen">
-        <div><span>Viés original</span><b>{reference.bias}</b></div>
-        <div><span>Convicção</span><b>{reference.thesisConviction || "—"}</b></div>
-        <div className="wide"><span>Contexto que estava disponível</span><p>{reference.marketContext || "—"}</p></div>
-        <div className="wide"><span>Níveis mapeados</span><p>{reference.keyLevels || "—"}</p></div>
-        <div className="wide"><span>Contraprovas registradas</span><p>{reference.evidenceAgainstThesis || "—"}</p></div>
-        <div className="wide"><span>O que faria mudar de opinião</span><p>{reference.changeMindCondition || "—"}</p></div>
-      </div>
-
-      <div className="replay-scenarios">{reference.scenarios.map((scenario) => <article key={scenario.id}><b>Cenário {scenario.label} — {scenario.title || "sem título"}</b><p><strong>Se:</strong> {scenario.trigger || "—"}</p><p><strong>Confirmação:</strong> {scenario.confirmation || "—"}</p><p><strong>Decisão prevista:</strong> {scenario.action || "—"}</p><p><strong>Invalidação:</strong> {scenario.invalidation || "—"}</p></article>)}</div>
-
-      <div className="form-grid two">
-        <Field label="Se eu estivesse diante desse contexto hoje, o que faria?"><textarea rows={6} value={decisionNow} onChange={(e) => setDecisionNow(e.target.value)} placeholder="Defina decisão, espera, gatilho, risco e aquilo que você conscientemente não faria." /></Field>
-        <Field label="Como interpreto este contexto hoje?"><textarea rows={6} value={interpretationNow} onChange={(e) => setInterpretationNow(e.target.value)} placeholder="Registre sua leitura atual antes de conhecer novamente o desfecho." /></Field>
-      </div>
-
-      {!revealed ? <div className="replay-lock"><b>Desfecho oculto</b><span>Preencha os dois campos acima e só então revele o mercado real.</span><button className="primary" onClick={revealOutcome}>Revelar o que aconteceu</button></div> : <div className="replay-outcome">
-        <span className="eyebrow">AGORA COMPARE</span><h3>O que realmente aconteceu naquele pregão</h3>
-        <div className="comparison-grid">
-          <article><h4>Mercado real</h4><p>{selectedPlan.review.happened || "Não registrado."}</p><p><b>Cenário observado:</b> {selectedPlan.review.observedScenario || "—"}</p></article>
-          <article><h4>Execução original</h4><p>{selectedPlan.review.executionSummary || "Não registrada."}</p><p><b>Aderência:</b> {selectedPlan.review.followedPlan || "—"}</p></article>
-          <article><h4>Aprendizado original</h4><p>{selectedPlan.review.lessons || "Não registrado."}</p><p><b>Desvios:</b> {selectedPlan.review.deviations || "—"}</p></article>
-        </div>
-        <Field label="O que mudou entre o que pensei naquela época e como interpreto agora?"><textarea rows={5} value={comparisonNotes} onChange={(e) => setComparisonNotes(e.target.value)} placeholder="Compare critérios, vieses, evidências ignoradas, qualidade da decisão e disciplina." /></Field>
-      </div>}
-      {trainingMessage && <div className="notice">{trainingMessage}</div>}
-      <div className="actions"><button onClick={revealOutcome} disabled={revealed}>Revelar desfecho</button><button className="primary" onClick={saveReplay} disabled={!decisionNow.trim() || !interpretationNow.trim() || !revealed}>Salvar exercício</button></div>
-    </div>}
-
-    <div className="training-layout">
-      <div className="panel">
-        <span className="eyebrow">ERROS RECORRENTES</span><h2>Exercício baseado em regras violadas</h2>
-        {violationStats.length ? <>
-          <Field label="Regra para treinar"><select value={selectedRuleId} onChange={(e) => { setSelectedRuleId(e.target.value); setErrorDecision(""); setErrorLesson(""); }}><option value="">Selecione</option>{violationStats.map((item) => <option value={item.ruleId} key={item.ruleId}>{item.rule?.title} • {item.count}×</option>)}</select></Field>
-          {selectedRule && <>
-            <div className="training-prompt"><b>{selectedRule.title}</b><p>{selectedRule.description}</p>{selectedRule.rationale && <small>Por que existe: {selectedRule.rationale}</small>}</div>
-            <Field label="Como reconhecerei o erro antes de repeti-lo?"><textarea rows={5} value={errorDecision} onChange={(e) => setErrorDecision(e.target.value)} placeholder="Descreva sinais de alerta e a resposta concreta que você executará." /></Field>
-            <Field label="Exercício / regra de ação para a próxima ocorrência"><textarea rows={4} value={errorLesson} onChange={(e) => setErrorLesson(e.target.value)} placeholder="Ex.: ao perceber X, cancelo a ordem, afasto-me por 3 minutos e releio a regra." /></Field>
-            <button className="primary" onClick={saveErrorExercise} disabled={!errorDecision.trim()}>Salvar exercício de correção</button>
-          </>}
-        </> : <div className="empty">Marque regras violadas nas revisões para que o sistema gere exercícios a partir dos seus próprios padrões.</div>}
-      </div>
-
-      <div className="panel">
-        <span className="eyebrow">BIBLIOTECA PESSOAL</span><h2>Exemplos corretos e incorretos de setups</h2>
-        {setupPlans.length ? <>
-          <Field label="Plano revisado"><select value={examplePlanId} onChange={(e) => { const id = e.target.value; setExamplePlanId(id); const existing = state.setupExamples.find((item) => item.planId === id); setExampleClass(existing?.classification || "Correto"); setExampleNotes(existing?.notes || ""); }}><option value="">Selecione</option>{setupPlans.map((plan) => <option value={plan.id} key={plan.id}>{fmtDate(plan.tradingDate)} • {plan.asset} • {state.setups.find((setup) => setup.id === plan.setupId)?.title || "Setup removido"}</option>)}</select></Field>
-          <Field label="Classificação"><select value={exampleClass} onChange={(e) => setExampleClass(e.target.value as SetupExample["classification"])}><option>Correto</option><option>Incorreto</option></select></Field>
-          <Field label="Por que este é um exemplo útil?"><textarea rows={4} value={exampleNotes} onChange={(e) => setExampleNotes(e.target.value)} placeholder="Registre o que deve ser repetido ou evitado." /></Field>
-          <button className="primary" onClick={saveSetupExample} disabled={!examplePlanId}>Salvar na biblioteca</button>
-        </> : <div className="empty">Planos revisados com setup de referência aparecerão aqui.</div>}
-      </div>
-    </div>
-
-    <div className="panel">
-      <div className="history-section-title"><div><span className="eyebrow">EXEMPLOS POR SETUP</span><h2>Exemplos classificados</h2></div><span>{state.setupExamples.length} exemplo(s)</span></div>
-      {state.setupExamples.length ? <div className="setup-example-grid">{state.setupExamples.map((example) => {
-        const plan = state.plans.find((item) => item.id === example.planId);
-        const setup = state.setups.find((item) => item.id === example.setupId);
-        const images = plan ? [...plan.attachments, ...plan.review.attachments].slice(0, 3) : [];
-        return <article key={example.id} className={`setup-example ${example.classification === "Correto" ? "correct" : "incorrect"}`}><div className="card-top"><div className="badges"><span className="badge">{setup?.title || "Setup removido"}</span>{example.isDemo && <span className="badge demo">Exemplo</span>}</div><span className={`badge ${example.classification === "Correto" ? "ok" : "warning"}`}>{example.classification}</span></div><h3>{plan ? `${fmtDate(plan.tradingDate)} • ${plan.asset}` : "Plano removido"}</h3><p>{example.notes || "Sem observações adicionais."}</p>{images.length > 0 && <div className="mini-images">{images.map((image) => <img key={image.id} src={image.dataUrl} alt={image.name} />)}</div>}<button className="tiny danger" onClick={() => setState((current) => ({ ...current, setupExamples: current.setupExamples.filter((item) => item.id !== example.id) }))}>Remover</button></article>;
-      })}</div> : <div className="empty">Classifique exemplos revisados para construir sua biblioteca pessoal de execução.</div>}
-    </div>
-
-    <div className="panel training-history">
-      <div className="history-section-title"><div><span className="eyebrow">HISTÓRICO DE TREINO</span><h2>Decisões revisitadas</h2></div><span>{state.trainingRecords.length} exercício(s)</span></div>
-      {state.trainingRecords.length ? <div className="training-records">{state.trainingRecords.map((record) => {
-        const plan = state.plans.find((item) => item.id === record.planId);
-        const rule = state.rules.find((item) => item.id === record.ruleId);
-        return <article key={record.id}><div className="training-record-head"><div><span className="badge">{record.type === "error" ? "Erro recorrente" : record.type === "revisit" ? "Revisita" : "Replay"}</span>{record.isDemo && <span className="badge demo">Exemplo</span>}<b>{plan ? `${fmtDate(plan.tradingDate)} • ${plan.asset}` : rule?.title || record.prompt}</b></div><button type="button" className="tiny danger" onClick={() => setState((current) => ({ ...current, trainingRecords: current.trainingRecords.filter((item) => item.id !== record.id) }))}>Remover</button></div><p><strong>Decisão/resposta:</strong> {record.decisionNow}</p>{record.interpretationNow && <p><strong>Interpretação:</strong> {record.interpretationNow}</p>}{record.comparisonNotes && <p><strong>Comparação/aprendizado:</strong> {record.comparisonNotes}</p>}<small>{fmtDateTime(record.createdAt)}</small></article>;
-      })}</div> : <div className="empty">Os exercícios salvos aparecerão aqui para comparação longitudinal.</div>}
-    </div>
-  </section>;
-}
 
 function InfoTip({ label, children }: { label: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -2090,13 +1861,11 @@ function SettingsPage({ state, setState }: { state: AppState; setState: React.Di
   const patch = (next: Partial<typeof settings>) => setState((s) => ({ ...s, settings: { ...s.settings, ...next } }));
 
   return <section className="page">
-    <div className="page-heading"><div><span className="eyebrow">PREFERÊNCIAS E DADOS</span><h1>Configurações</h1><p>Os dados ficam localmente neste dispositivo. Use backups JSON para transportar ou restaurar regras, setups, planos, versões de referência, revisões e imagens.</p></div></div>
+    <div className="page-heading"><div><h1>Configurações</h1><p>Os dados ficam localmente neste dispositivo. Use backups JSON para transportar ou restaurar regras, setups, planos, versões de referência, revisões e imagens.</p></div></div>
     <div className="two-cols align-start">
       <div className="panel"><h2>Preferências gerais</h2>
-        <Field label="Nome do trader"><input value={settings.traderName} onChange={(e) => patch({ traderName: e.target.value })} placeholder="Opcional" /></Field>
         <Field label="Tema"><select value={settings.theme} onChange={(e) => patch({ theme: e.target.value as "dark" | "light" })}><option value="dark">Escuro</option><option value="light">Claro</option></select></Field>
         <Field label="Idioma da interface"><select value={settings.language} onChange={(e) => patch({ language: e.target.value as "pt-BR" | "en" | "es" })}><option value="pt-BR">Português (Brasil)</option><option value="en">English</option><option value="es">Español</option></select></Field>
-        <AttachmentField value={settings.attachments} onChange={(attachments) => patch({ attachments })} title="Imagens de referência geral" />
       </div>
       <div className="panel">
         <div className="desktop-update">
@@ -2149,7 +1918,7 @@ export default function App() {
   activeLanguage = state.settings.language;
   activeLocale = localeForLanguage(activeLanguage);
   setInterfaceLanguage(activeLanguage);
-  const hasDemoItems = state.rules.some((item) => item.isDemo) || state.setups.some((item) => item.isDemo) || state.plans.some((item) => item.isDemo) || state.planTemplates.some((item) => item.isDemo) || state.studies.some((item) => item.isDemo) || state.journalTrades.some((item) => item.isDemo) || state.trainingRecords.some((item) => item.isDemo) || state.setupExamples.some((item) => item.isDemo);
+  const hasDemoItems = state.rules.some((item) => item.isDemo) || state.setups.some((item) => item.isDemo) || state.plans.some((item) => item.isDemo) || state.planTemplates.some((item) => item.isDemo) || state.studies.some((item) => item.isDemo) || state.journalTrades.some((item) => item.isDemo);
 
   useEffect(() => {
     if (desktop) return;
@@ -2255,7 +2024,6 @@ export default function App() {
     ["system", "Sistema de trade", "◆"],
     ["planning", "Planejamento", "▤"],
     ["history", "Histórico", "◫"],
-    ["training", "Treinamento", "◎"],
     ["settings", "Configurações", "⚙"],
   ];
 
@@ -2273,7 +2041,6 @@ export default function App() {
       <div hidden={tab !== "system"}><SystemPage state={state} setState={setState} /></div>
       <div hidden={tab !== "planning"}><PlanningPage state={state} setState={setState} /></div>
       <div hidden={tab !== "history"}><HistoryPage state={state} setState={setState} /></div>
-      <div hidden={tab !== "training"}><TrainingPage state={state} setState={setState} /></div>
       <div hidden={tab !== "settings"}><SettingsPage state={state} setState={setState} /></div>
     </main>
   </div>;

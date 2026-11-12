@@ -6,12 +6,10 @@ import type {
   PlanSnapshot,
   PlanTemplate,
   Scenario,
-  SetupExample,
   TradePlan,
   TradeRule,
   TradeSetup,
   TradeStudy,
-  TrainingRecord,
 } from "./types";
 
 export const DEMO_DATA_VERSION = 1;
@@ -315,36 +313,6 @@ function demoJournalTrade(plan: TradePlan): JournalTrade {
   };
 }
 
-function demoTraining(plan: TradePlan, ruleId: string): TrainingRecord {
-  const stamp = new Date().toISOString();
-  return {
-    id: id(),
-    isDemo: true,
-    type: "revisit",
-    planId: plan.id,
-    setupId: plan.setupId,
-    ruleId,
-    prompt: "Exemplo: revisitar uma decisão após a sessão.",
-    decisionNow: "Aguardar a confirmação completa antes de considerar uma entrada.",
-    interpretationNow: "A região foi respeitada inicialmente, mas a confirmação não se manteve.",
-    comparisonNotes: "A saída antecipada deve ser comparada ao critério de gestão que havia sido definido.",
-    createdAt: stamp,
-    completedAt: stamp,
-  };
-}
-
-function demoSetupExample(plan: TradePlan, setupId: string): SetupExample {
-  return {
-    id: id(),
-    isDemo: true,
-    setupId,
-    planId: plan.id,
-    classification: "Incorreto",
-    notes: "Exemplo didático: a entrada ocorreu antes da confirmação exigida pelo setup. Use a classificação para registrar o que repetir ou evitar.",
-    createdAt: new Date().toISOString(),
-  };
-}
-
 /**
  * Insere exemplos fictícios uma única vez, preservando todos os dados existentes.
  * O marcador permanece mesmo depois de o usuário excluir os exemplos, evitando que
@@ -366,8 +334,6 @@ export function ensureDemoData(state: AppState): AppState {
     plans: [...state.plans, historicalPlan, upcomingPlan],
     planTemplates: [...state.planTemplates, demoTemplate(setup.id)],
     journalTrades: [...state.journalTrades, demoJournalTrade(historicalPlan)],
-    trainingRecords: [...state.trainingRecords, demoTraining(historicalPlan, rule.id)],
-    setupExamples: [...state.setupExamples, demoSetupExample(historicalPlan, setup.id)],
     studies: [...state.studies, demoStudy()],
   };
 }

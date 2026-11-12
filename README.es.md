@@ -79,18 +79,6 @@ En **Historial** se pueden importar ejecuciones en **JSON o CSV** y vincularlas 
 
 Formato y ejemplos: [`docs/JOURNAL-INTEGRATION.md`](docs/JOURNAL-INTEGRATION.md).
 
-### Entrenamiento deliberado
-
-La sección **Entrenamiento** convierte el historial en ejercicios prácticos:
-
-- Replay de planes con una versión de referencia guardada, sin mostrar inicialmente el desenlace;
-- revisión automática de planes con baja adherencia;
-- ejercicios basados en las reglas que el trader viola con mayor frecuencia;
-- comparación **“lo que pensé entonces” × “cómo lo interpreto ahora”**;
-- biblioteca personal de ejemplos **correctos e incorrectos** por setup.
-
-En el Replay, el mercado real y la ejecución original solo aparecen después de registrar una nueva decisión y lectura.
-
 ## Instalación y uso en Windows
 
 Hay dos formas de usar el proyecto.

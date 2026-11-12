@@ -186,3 +186,13 @@
 - [x] Remover as abas de **Regras gerais** e **Setups operacionais** e apresentar ambas as categorias em uma página contínua do **Sistema de trade**.
 - [x] Atualizar traduções e READMEs em português, inglês e espanhol para refletir a nova organização.
 - [ ] Validar testes, tipagem, build web e empacotamento NSIS no Windows.
+
+
+## Fase 11 — Simplificação da interface
+
+- [x] Remover os pequenos rótulos decorativos acima dos títulos das páginas e painéis.
+- [x] Eliminar a seção **Treinamento** da navegação e da interface; manter os campos históricos antigos apenas para compatibilidade com dados e backups existentes.
+- [x] Parar de criar exemplos fictícios exclusivos da seção removida.
+- [x] Padronizar o espaçamento vertical entre páginas, painéis, formulários e grupos de controles.
+- [x] Remover **Nome do trader** e **Imagens de referência geral** de Configurações, preservando os dados antigos em backups sem exibi-los.
+- [ ] Validar testes, tipagem, build web e empacotamento NSIS no Windows.

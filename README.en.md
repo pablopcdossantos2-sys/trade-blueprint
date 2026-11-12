@@ -79,18 +79,6 @@ Under **History**, executions can be imported from **JSON or CSV** and linked to
 
 Format and examples: [`docs/JOURNAL-INTEGRATION.md`](docs/JOURNAL-INTEGRATION.md).
 
-### Deliberate training
-
-The **Training** section turns historical records into practical exercises:
-
-- outcome-blind Replay using plans with a saved reference version;
-- automatic revisiting of low-adherence plans;
-- exercises generated from the trader's most frequently violated rules;
-- **“what I thought then” × “how I interpret it now”** comparison;
-- personal library of **correct and incorrect** examples by setup.
-
-During Replay, the actual market and original execution remain hidden until the trader records a new decision and reading.
-
 ## Installation and use on Windows
 
 There are two ways to use the project.
