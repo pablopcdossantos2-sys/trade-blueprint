@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { AppState } from "./types";
+import { translateUi } from "./i18n";
 
 export const CURRENT_SCHEMA_VERSION = 9;
 // Mantemos a chave legada para preservar dados criados antes da adoção do nome Trade Blueprint.
@@ -577,6 +578,11 @@ export function serializeState(state: AppState, pretty = false, exportedAt?: str
     attachmentData,
     updatedAt: now(),
   };
+  const validated = stateSchema.safeParse(payload);
+  if (!validated.success) {
+    const issue = validated.error.issues[0];
+    throw new Error(`O estado não pode ser salvo: ${issue.path.join(".") || "arquivo"} — ${issue.message}`);
+  }
   if (exportedAt) payload.exportedAt = exportedAt;
   return JSON.stringify(payload, null, pretty ? 2 : undefined);
 }
@@ -676,7 +682,33 @@ export function initialState(): AppState {
   };
 }
 
+// Corrige apenas enums estruturados afetados pela tradução automática em EN/ES.
+// Textos livres do usuário não são alterados.
+const enumValues: Record<string, readonly string[]> = {
+  category: ["Entrada", "Saída", "Risco", "Horário", "Contexto", "Comportamento", "Outro"],
+  bias: ["Alta", "Baixa", "Neutro"],
+  thesisConviction: ["", "Baixa", "Média", "Alta"],
+  observedScenario: ["", "A", "B", "C", "Nenhum", "Mistura"],
+  followedPlan: ["", "Sim", "Parcialmente", "Não", "Não operei"],
+  executionOrigin: ["", "Planejada", "Parcialmente planejada", "Improvisada"],
+};
+
+function repairTranslatedEnums(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(repairTranslatedEnums);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(Object.entries(value).map(([key, item]) => {
+    const canonical = enumValues[key];
+    if (!canonical || typeof item !== "string" || canonical.includes(item)) {
+      return [key, repairTranslatedEnums(item)];
+    }
+    const translatedFrom = canonical.find((candidate) =>
+      translateUi(candidate, "en") === item || translateUi(candidate, "es") === item);
+    return [key, translatedFrom ?? item];
+  }));
+}
+
 function migrateState(data: unknown): AppState {
+  data = repairTranslatedEnums(data);
   const versionResult = z.object({ schemaVersion: z.number().int() }).safeParse(data);
   if (!versionResult.success) {
     throw new Error("Arquivo sem versão de schema reconhecível.");
@@ -843,7 +875,14 @@ function migrateState(data: unknown): AppState {
 }
 
 export function loadStateResult(): StateLoadResult {
-  const saved = localStorage.getItem(STORAGE_KEY);
+  let saved: string | null;
+  try {
+    saved = localStorage.getItem(STORAGE_KEY);
+  } catch (error) {
+    const message = `Modo protegido: não foi possível acessar o armazenamento local. ${error instanceof Error ? error.message : String(error)}`;
+    setStorageLoadGuard(message);
+    return { state: initialState(), error: message };
+  }
   if (!saved) {
     clearStorageLoadGuard();
     return { state: initialState() };
@@ -854,12 +893,12 @@ export function loadStateResult(): StateLoadResult {
     clearStorageLoadGuard();
     return { state };
   } catch (error) {
-    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const recoveryKey = `trade-blueprint-corrompido-${stamp}`;
+    // Uma única cópia evita esgotar a cota do navegador em aberturas repetidas.
+    const recoveryKey = "trade-blueprint-corrompido-ultimo";
     let preserved = false;
 
     try {
-      localStorage.setItem(recoveryKey, saved);
+      if (localStorage.getItem(recoveryKey) !== saved) localStorage.setItem(recoveryKey, saved);
       preserved = true;
     } catch {
       // The original key remains untouched even if there is no quota for a recovery copy.

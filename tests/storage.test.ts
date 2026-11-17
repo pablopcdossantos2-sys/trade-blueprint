@@ -83,6 +83,43 @@ test("falha de leitura preserva o conteudo original e bloqueia sobrescrita", () 
   clearStorageLoadGuard();
 });
 
+test("recargas de estado corrompido mantêm uma só cópia de recuperação", () => {
+  installStorage();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ schemaVersion: 999 }));
+  const first = loadStateResult();
+  const second = loadStateResult();
+  assert.equal(first.recoveryKey, second.recoveryKey);
+  assert.equal([...Array(localStorage.length)].map((_, index) => localStorage.key(index))
+    .filter((key) => key?.startsWith("trade-blueprint-corrompido-")).length, 1);
+  clearStorageLoadGuard();
+});
+
+test("corrige somente campos de enum traduzidos em backups EN/ES", () => {
+  installStorage();
+  const original = initialState();
+  original.rules.push({
+    id: "r", title: "Risk", description: "Neutral", rationale: "", active: true,
+    category: "Entrada", attachments: [], createdAt: original.updatedAt, updatedAt: original.updatedAt,
+  });
+  const json = JSON.parse(serializeState(original));
+  json.rules[0].category = "Entry";
+  json.rules[0].title = "Risk";
+  const repaired = parseBackup(JSON.stringify(json));
+  assert.equal(repaired.rules[0].category, "Entrada");
+  assert.equal(repaired.rules[0].title, "Risk");
+  assert.equal(repaired.rules[0].description, "Neutral");
+});
+
+test("recusa serializar enums invalidos antes de gravar", () => {
+  installStorage();
+  const broken = initialState();
+  broken.rules.push({
+    id: "r", title: "Regra", description: "Texto", rationale: "", active: true,
+    category: "Entry", attachments: [], createdAt: broken.updatedAt, updatedAt: broken.updatedAt,
+  });
+  assert.throws(() => serializeState(broken), /category/);
+});
+
 test("estado valido continua salvando normalmente", () => {
   installStorage();
   clearStorageLoadGuard();

@@ -281,12 +281,17 @@ function blankSetup(): TradeSetup {
 function fmtDate(value: string) {
   if (!value) return "—";
   const [y, m, d] = value.split("-").map(Number);
-  return new Intl.DateTimeFormat(activeLocale, { dateStyle: "short" }).format(new Date(y, m - 1, d));
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return "Data inválida";
+  const date = new Date(y, m - 1, d);
+  if (!Number.isFinite(date.getTime()) || date.getFullYear() !== y || date.getMonth() !== m - 1 || date.getDate() !== d) return "Data inválida";
+  return new Intl.DateTimeFormat(activeLocale, { dateStyle: "short" }).format(date);
 }
 
 function fmtDateTime(value?: string) {
   if (!value) return "—";
-  return new Intl.DateTimeFormat(activeLocale, { dateStyle: "short", timeStyle: "short" }).format(new Date(value));
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "Data inválida";
+  return new Intl.DateTimeFormat(activeLocale, { dateStyle: "short", timeStyle: "short" }).format(date);
 }
 
 function downloadText(filename: string, text: string) {
@@ -387,7 +392,7 @@ function Dashboard({ state, onOpenPlans, onOpenSystem }: { state: AppState; onOp
   const reviewedPlans = state.plans.filter((p) => !p.isDemo && !!p.review.reviewedAt);
   const reviewed = reviewedPlans.length;
   const followed = reviewedPlans.filter((p) => p.review.followedPlan === "Sim").length;
-  const frozen = state.plans.filter((p) => !p.isDemo && p.planStatus === "frozen").length;
+  const frozen = state.plans.filter((p) => !p.isDemo && p.versions.length > 0).length;
   const realRules = state.rules.filter((r) => !r.isDemo && r.active).length;
   const realSetups = state.setups.filter((s) => !s.isDemo && s.active).length;
   const realStudies = state.studies.filter((study) => !study.isDemo).length;
@@ -456,7 +461,7 @@ function RulesPage({ state, setState, embedded = false }: { state: AppState; set
     <div className="panel form-panel"><h2>{editing ? "Editar regra" : "Adicionar regra"}</h2>
       <div className="form-grid">
         <Field label="Nome da regra"><input value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} placeholder="Ex.: Não aumentar stop após entrar" /></Field>
-        <Field label="Categoria"><select value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value as RuleCategory })}>{ruleCategories.map((x) => <option key={x}>{x}</option>)}</select></Field>
+        <Field label="Categoria"><select value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value as RuleCategory })}>{ruleCategories.map((x) => <option key={x} value={x}>{x}</option>)}</select></Field>
         <Field label="Regra"><textarea rows={4} value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} placeholder="Escreva de forma objetiva o que deve ou não deve ser feito." /></Field>
         <Field label="Por que esta regra existe?" hint="Registrar a justificativa ajuda a obedecer a regra quando houver pressão."><textarea rows={4} value={draft.rationale} onChange={(e) => setDraft({ ...draft, rationale: e.target.value })} placeholder="Que problema, erro recorrente ou princípio técnico esta regra protege?" /></Field>
       </div>
@@ -755,8 +760,8 @@ function PlanEditor({ initial, assets, setups, rules, onPersist, onCreateTemplat
       <div className="form-grid three">
         <Field label="Ativo"><input list="assets" value={draft.asset} onChange={(e) => setDraft({ ...draft, asset: e.target.value.toUpperCase() })} /><datalist id="assets">{assets.map((a) => <option key={a} value={a} />)}</datalist></Field>
         <Field label="Data do pregão"><input type="date" value={draft.tradingDate} onChange={(e) => setDraft({ ...draft, tradingDate: e.target.value })} /></Field>
-        <Field label="Viés inicial"><select value={draft.bias} onChange={(e) => setDraft({ ...draft, bias: e.target.value as TradePlan["bias"] })}><option>Alta</option><option>Baixa</option><option>Neutro</option></select></Field>
-        <Field label="Convicção na tese" hint="Registro subjetivo para revisão posterior; não é um sinal operacional."><select value={draft.thesisConviction} onChange={(e) => setDraft({ ...draft, thesisConviction: e.target.value as TradePlan["thesisConviction"] })}><option value="">Não avaliada</option><option>Baixa</option><option>Média</option><option>Alta</option></select></Field>
+        <Field label="Viés inicial"><select value={draft.bias} onChange={(e) => setDraft({ ...draft, bias: e.target.value as TradePlan["bias"] })}><option value="Alta">Alta</option><option value="Baixa">Baixa</option><option value="Neutro">Neutro</option></select></Field>
+        <Field label="Convicção na tese" hint="Registro subjetivo para revisão posterior; não é um sinal operacional."><select value={draft.thesisConviction} onChange={(e) => setDraft({ ...draft, thesisConviction: e.target.value as TradePlan["thesisConviction"] })}><option value="">Não avaliada</option><option value="Baixa">Baixa</option><option value="Média">Média</option><option value="Alta">Alta</option></select></Field>
       </div>
 
       <div className="setup-apply">
@@ -802,9 +807,9 @@ function PlanEditor({ initial, assets, setups, rules, onPersist, onCreateTemplat
       <div className="form-grid two">
         <Field label="O que o mercado efetivamente fez?"><textarea rows={7} value={draft.review.happened} onChange={(e) => setDraft({ ...draft, review: { ...draft.review, happened: e.target.value } })} placeholder="Descreva a sequência do mercado, mudanças de contexto e os pontos que mais importaram." /></Field>
         <Field label="O que EU efetivamente fiz?"><textarea rows={7} value={draft.review.executionSummary} onChange={(e) => setDraft({ ...draft, review: { ...draft.review, executionSummary: e.target.value } })} placeholder="Entradas, saídas, esperas, cancelamentos e decisões que você realmente tomou." /></Field>
-        <Field label="Qual cenário predominou?"><select value={draft.review.observedScenario} onChange={(e) => setDraft({ ...draft, review: { ...draft.review, observedScenario: e.target.value as PlanReview["observedScenario"] } })}><option value="">Selecione</option><option>A</option><option>B</option><option>C</option><option>Nenhum</option><option>Mistura</option></select></Field>
-        <Field label="Você seguiu o plano?"><select value={draft.review.followedPlan} onChange={(e) => setDraft({ ...draft, review: { ...draft.review, followedPlan: e.target.value as PlanReview["followedPlan"] } })}><option value="">Selecione</option><option>Sim</option><option>Parcialmente</option><option>Não</option><option>Não operei</option></select></Field>
-        <Field label="Origem da execução" hint="Classifique se o que você executou estava previsto no plano."><select value={draft.review.executionOrigin} onChange={(e) => setDraft({ ...draft, review: { ...draft.review, executionOrigin: e.target.value as PlanReview["executionOrigin"] } })}><option value="">Selecione</option><option>Planejada</option><option>Parcialmente planejada</option><option>Improvisada</option></select></Field>
+        <Field label="Qual cenário predominou?"><select value={draft.review.observedScenario} onChange={(e) => setDraft({ ...draft, review: { ...draft.review, observedScenario: e.target.value as PlanReview["observedScenario"] } })}><option value="">Selecione</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="Nenhum">Nenhum</option><option value="Mistura">Mistura</option></select></Field>
+        <Field label="Você seguiu o plano?"><select value={draft.review.followedPlan} onChange={(e) => setDraft({ ...draft, review: { ...draft.review, followedPlan: e.target.value as PlanReview["followedPlan"] } })}><option value="">Selecione</option><option value="Sim">Sim</option><option value="Parcialmente">Parcialmente</option><option value="Não">Não</option><option value="Não operei">Não operei</option></select></Field>
+        <Field label="Origem da execução" hint="Classifique se o que você executou estava previsto no plano."><select value={draft.review.executionOrigin} onChange={(e) => setDraft({ ...draft, review: { ...draft.review, executionOrigin: e.target.value as PlanReview["executionOrigin"] } })}><option value="">Selecione</option><option value="Planejada">Planejada</option><option value="Parcialmente planejada">Parcialmente planejada</option><option value="Improvisada">Improvisada</option></select></Field>
         <Field label="Qualidade da leitura" hint="Avalie a leitura do mercado, independentemente do resultado financeiro."><select value={draft.review.readingQuality} onChange={(e) => setDraft({ ...draft, review: { ...draft.review, readingQuality: Number(e.target.value) } })}><option value={0}>Não avaliada</option><option value={1}>1 — Muito fraca</option><option value={2}>2 — Fraca</option><option value={3}>3 — Adequada</option><option value={4}>4 — Boa</option><option value={5}>5 — Excelente</option></select></Field>
         <Field label="Qualidade da execução" hint="Avalie disciplina e execução, separadamente da qualidade da leitura."><select value={draft.review.executionQuality} onChange={(e) => setDraft({ ...draft, review: { ...draft.review, executionQuality: Number(e.target.value) } })}><option value={0}>Não avaliada</option><option value={1}>1 — Muito fraca</option><option value={2}>2 — Fraca</option><option value={3}>3 — Adequada</option><option value={4}>4 — Boa</option><option value={5}>5 — Excelente</option></select></Field>
         <Field label="Desvios entre plano e execução"><textarea rows={5} value={draft.review.deviations} onChange={(e) => setDraft({ ...draft, review: { ...draft.review, deviations: e.target.value } })} placeholder="O que você fez diferente do planejado? Por quê?" /></Field>
@@ -902,7 +907,7 @@ function StudyEditor({ initial, assets, setups, onSave, onClose }: {
       <Field label="Data do mercado observado (opcional)"><input type="date" value={draft.referenceDate} onChange={(e) => setDraft({ ...draft, referenceDate: e.target.value })} /></Field>
       <Field label="Ativo (opcional)"><input list="study-assets" value={draft.asset} onChange={(e) => setDraft({ ...draft, asset: e.target.value.toUpperCase() })} placeholder="Ex.: WINFUT" /><datalist id="study-assets">{assets.map((a) => <option key={a} value={a} />)}</datalist></Field>
       <Field label="Timeframe / recorte"><input value={draft.timeframe} onChange={(e) => setDraft({ ...draft, timeframe: e.target.value })} placeholder="Ex.: 2 min; abertura; 10 pregões" /></Field>
-      <Field label="Viés / hipótese inicial"><select value={draft.bias} onChange={(e) => setDraft({ ...draft, bias: e.target.value as TradeStudy["bias"] })}><option>Alta</option><option>Baixa</option><option>Neutro</option></select></Field>
+      <Field label="Viés / hipótese inicial"><select value={draft.bias} onChange={(e) => setDraft({ ...draft, bias: e.target.value as TradeStudy["bias"] })}><option value="Alta">Alta</option><option value="Baixa">Baixa</option><option value="Neutro">Neutro</option></select></Field>
     </div>
 
     <div className="setup-apply">
@@ -1502,7 +1507,7 @@ function JournalIntegration({ state, setState }: { state: AppState; setState: Re
 
     {!!state.journalTrades.length && <div className="journal-table-wrap"><table className="journal-table"><thead><tr><th>Data</th><th>Ativo</th><th>Execução</th><th>Resultado</th><th>Plano</th><th>Cenário</th><th></th></tr></thead><tbody>{state.journalTrades.slice(0, 100).map((trade) => {
       const linkedPlan = state.plans.find((plan) => plan.id === trade.planId);
-      return <tr key={trade.id}><td>{fmtDate(trade.tradingDate)}</td><td><b>{trade.asset}</b>{trade.isDemo && <span className="badge demo">Exemplo</span>}<small>{trade.side}</small></td><td><span>{[trade.entryTime, trade.entryPrice].filter(Boolean).join(" @ ") || "—"}</span><small>{[trade.exitTime, trade.exitPrice].filter(Boolean).join(" @ ")}</small></td><td>{trade.result || "—"}</td><td><select value={trade.planId ?? ""} onChange={(e) => linkPlan(trade, e.target.value)}><option value="">Sem vínculo</option>{state.plans.map((plan) => <option key={plan.id} value={plan.id}>{plan.asset} • {fmtDate(plan.tradingDate)}</option>)}</select></td><td><select value={trade.scenarioLabel} disabled={!linkedPlan} onChange={(e) => patchTrade(trade.id, { scenarioLabel: e.target.value as JournalTrade["scenarioLabel"] })}><option value="">—</option><option>A</option><option>B</option><option>C</option></select>{linkedPlan && !tradeHasPreplannedScenario(trade, linkedPlan) && <small className="warning-text">Não corresponde a cenário previamente definido.</small>}</td><td><button className="tiny danger" onClick={() => setState((current) => ({ ...current, journalTrades: current.journalTrades.filter((item) => item.id !== trade.id) }))}>Remover</button></td></tr>;
+      return <tr key={trade.id}><td>{fmtDate(trade.tradingDate)}</td><td><b>{trade.asset}</b>{trade.isDemo && <span className="badge demo">Exemplo</span>}<small>{trade.side}</small></td><td><span>{[trade.entryTime, trade.entryPrice].filter(Boolean).join(" @ ") || "—"}</span><small>{[trade.exitTime, trade.exitPrice].filter(Boolean).join(" @ ")}</small></td><td>{trade.result || "—"}</td><td><select value={trade.planId ?? ""} onChange={(e) => linkPlan(trade, e.target.value)}><option value="">Sem vínculo</option>{state.plans.map((plan) => <option key={plan.id} value={plan.id}>{plan.asset} • {fmtDate(plan.tradingDate)}</option>)}</select></td><td><select value={trade.scenarioLabel} disabled={!linkedPlan} onChange={(e) => patchTrade(trade.id, { scenarioLabel: e.target.value as JournalTrade["scenarioLabel"] })}><option value="">—</option><option value="A">A</option><option value="B">B</option><option value="C">C</option></select>{linkedPlan && !tradeHasPreplannedScenario(trade, linkedPlan) && <small className="warning-text">Não corresponde a cenário previamente definido.</small>}</td><td><button className="tiny danger" onClick={() => setState((current) => ({ ...current, journalTrades: current.journalTrades.filter((item) => item.id !== trade.id) }))}>Remover</button></td></tr>;
     })}</tbody></table></div>}
 
     <div className="history-section-title journal-report-title"><div><h3>Planejei × operei × registrei</h3></div></div>
@@ -1661,10 +1666,10 @@ function HistoryPage({ state, setState }: { state: AppState; setState: React.Dis
     <div className="panel history-filters">
       <h2>Filtros</h2>
       <div className="history-filter-grid">
-        <Field label="Ativo"><select value={asset} onChange={(e) => setAsset(e.target.value)}><option value="">Todos</option>{[...new Set(state.plans.map((plan) => plan.asset))].sort().map((item) => <option key={item}>{item}</option>)}</select></Field>
+        <Field label="Ativo"><select value={asset} onChange={(e) => setAsset(e.target.value)}><option value="">Todos</option>{[...new Set(state.plans.map((plan) => plan.asset))].sort().map((item) => <option key={item} value={item}>{item}</option>)}</select></Field>
         <Field label="Setup"><select value={setupId} onChange={(e) => setSetupId(e.target.value)}><option value="">Todos</option>{state.setups.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></Field>
-        <Field label="Cenário observado"><select value={scenario} onChange={(e) => setScenario(e.target.value)}><option value="">Todos</option><option>A</option><option>B</option><option>C</option><option>Nenhum</option><option>Mistura</option></select></Field>
-        <Field label="Aderência"><select value={adherence} onChange={(e) => setAdherence(e.target.value)}><option value="">Todos</option><option>Sim</option><option>Parcialmente</option><option>Não</option><option>Não operei</option></select></Field>
+        <Field label="Cenário observado"><select value={scenario} onChange={(e) => setScenario(e.target.value)}><option value="">Todos</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="Nenhum">Nenhum</option><option value="Mistura">Mistura</option></select></Field>
+        <Field label="Aderência"><select value={adherence} onChange={(e) => setAdherence(e.target.value)}><option value="">Todos</option><option value="Sim">Sim</option><option value="Parcialmente">Parcialmente</option><option value="Não">Não</option><option value="Não operei">Não operei</option></select></Field>
         <Field label="De"><input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} /></Field>
         <Field label="Até"><input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} /></Field>
       </div>
@@ -2029,7 +2034,7 @@ export default function App() {
 
   return <div className="app-shell">
     <aside>
-      <div className="brand"><div className="brand-mark"><img src="/trade-blueprint-mark.svg" alt="" /></div><div><strong>Trade Blueprint</strong><span>preparar • registrar • executar • revisar</span></div></div>
+      <div className="brand"><div className="brand-mark"><img src="./trade-blueprint-mark.svg" alt="" /></div><div><strong>Trade Blueprint</strong><span>preparar • registrar • executar • revisar</span></div></div>
       <nav>{nav.map(([id, label, icon]) => <button key={id} className={tab === id ? "active" : ""} onClick={() => setTab(id)}><span>{icon}</span>{label}</button>)}</nav>
       <div className="sidebar-foot"><span>Dados locais</span><b>schema v{state.schemaVersion}</b></div>
     </aside>

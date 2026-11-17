@@ -1,5 +1,7 @@
 // Chave legada deliberadamente estável para preservar instalações anteriores ao rebranding.
 // Mantê-la igual a STORAGE_KEY em storage.ts.
+import { storageLoadGuardMessage } from "./storage";
+
 const STORAGE_KEY = "plano-de-trade-data-v1";
 
 const DB_NAME = "trade-blueprint-attachments";
@@ -91,7 +93,11 @@ async function readAttachmentData(db: IDBDatabase, ids: Set<string>) {
 
 let saveQueue: Promise<void> = Promise.resolve();
 
-async function performSave(serializedState: string) {
+async function performSave(serializedState: string, allowRecovery: boolean) {
+  if (!allowRecovery) {
+    const guard = storageLoadGuardMessage();
+    if (guard) throw new Error(guard);
+  }
   const parsed = JSON.parse(serializedState) as JsonObject;
   const attachmentData = isObject(parsed.attachmentData)
     ? Object.fromEntries(Object.entries(parsed.attachmentData).filter((entry): entry is [string, string] => typeof entry[1] === "string" && !!entry[1]))
@@ -107,10 +113,9 @@ async function performSave(serializedState: string) {
     for (const [id, dataUrl] of Object.entries(attachmentData)) {
       if (!known.has(id)) store.put(dataUrl, id);
     }
-    for (const id of known) {
-      if (!referencedIds.has(id)) store.delete(id);
-    }
-
+    // Não excluir anexos durante o salvamento: a gravação no localStorage
+    // pode falhar e outras abas ainda podem referenciar os arquivos antigos.
+    // A limpeza explícita permanece disponível após backup e confirmação.
     await transactionDone(transaction);
 
     for (const id of referencedIds) {
@@ -126,8 +131,8 @@ async function performSave(serializedState: string) {
   }
 }
 
-export function saveWebStateExternalized(serializedState: string) {
-  const operation = saveQueue.then(() => performSave(serializedState));
+export function saveWebStateExternalized(serializedState: string, allowRecovery = false) {
+  const operation = saveQueue.then(() => performSave(serializedState, allowRecovery));
   saveQueue = operation.catch(() => undefined);
   return operation;
 }
