@@ -40,6 +40,12 @@ export function storageLoadGuardMessage() {
   }
 }
 
+const validIsoDate = z.string().refine((value) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T12:00:00.000Z`);
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}, "Data inválida. Use AAAA-MM-DD.");
+
 const attachmentSchema = z.object({
   id: z.string(),
   name: z.string().max(200),
@@ -215,7 +221,7 @@ const snapshotSchema = z.object({
   version: z.number().int().min(1),
   frozenAt: z.string(),
   asset: z.string(),
-  tradingDate: z.string(),
+  tradingDate: validIsoDate,
   bias: z.enum(["Alta", "Baixa", "Neutro"]),
   setupId: z.string().optional(),
   marketContext: z.string(),
@@ -237,8 +243,8 @@ const snapshotSchema = z.object({
 
 const planV5Schema = z.object({
   id: z.string(),
-  planDate: z.string(),
-  tradingDate: z.string(),
+  planDate: validIsoDate,
+  tradingDate: validIsoDate,
   asset: z.string(),
   bias: z.enum(["Alta", "Baixa", "Neutro"]),
   setupId: z.string().optional(),
@@ -295,8 +301,8 @@ const planSchema = z.object({
   id: z.string(),
   isDemo: z.boolean().optional(),
   sessionId: z.string(),
-  planDate: z.string(),
-  tradingDate: z.string(),
+  planDate: validIsoDate,
+  tradingDate: validIsoDate,
   asset: z.string(),
   bias: z.enum(["Alta", "Baixa", "Neutro"]),
   setupId: z.string().optional(),
@@ -347,7 +353,7 @@ const journalTradeSchema = z.object({
   id: z.string(),
   isDemo: z.boolean().optional(),
   externalId: z.string(),
-  tradingDate: z.string(),
+  tradingDate: validIsoDate,
   asset: z.string(),
   side: z.string(),
   entryTime: z.string(),
@@ -393,8 +399,8 @@ const studySchema = z.object({
   id: z.string(),
   isDemo: z.boolean().optional(),
   title: z.string(),
-  studyDate: z.string(),
-  referenceDate: z.string(),
+  studyDate: validIsoDate,
+  referenceDate: z.union([z.literal(""), validIsoDate]),
   asset: z.string(),
   timeframe: z.string(),
   bias: z.enum(["Alta", "Baixa", "Neutro"]),

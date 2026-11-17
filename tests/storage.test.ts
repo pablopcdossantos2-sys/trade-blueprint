@@ -244,3 +244,16 @@ test("loader web preserva schema legado com imagens inline antes da migracao", a
 
   assert.equal(await loadWebStatePayload(), raw);
 });
+
+test("schema v9 rejeita datas inexistentes sem derrubar a leitura", () => {
+  installStorage();
+  const state = initialState();
+  const raw = JSON.parse(serializeState(state));
+  raw.journalTrades.push({
+    id: "j", externalId: "1", tradingDate: "2026-02-30", asset: "WINFUT",
+    side: "", entryTime: "", exitTime: "", entryPrice: "", exitPrice: "",
+    quantity: "", result: "", notes: "", scenarioLabel: "", importSource: "teste",
+    importedAt: state.updatedAt,
+  });
+  assert.throws(() => parseBackup(JSON.stringify(raw)), /tradingDate|Data inválida/);
+});

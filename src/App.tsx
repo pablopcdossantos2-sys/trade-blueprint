@@ -390,8 +390,10 @@ function Dashboard({ state, onOpenPlans, onOpenSystem }: { state: AppState; onOp
     [state.plans],
   );
   const reviewedPlans = state.plans.filter((p) => !p.isDemo && !!p.review.reviewedAt);
-  const reviewed = reviewedPlans.length;
-  const followed = reviewedPlans.filter((p) => p.review.followedPlan === "Sim").length;
+  // "Não operei" e respostas ausentes não entram no denominador de aderência.
+  const evaluatedPlans = reviewedPlans.filter((p) => ["Sim", "Parcialmente", "Não"].includes(p.review.followedPlan));
+  const reviewed = evaluatedPlans.length;
+  const followed = evaluatedPlans.filter((p) => p.review.followedPlan === "Sim").length;
   const frozen = state.plans.filter((p) => !p.isDemo && p.versions.length > 0).length;
   const realRules = state.rules.filter((r) => !r.isDemo && r.active).length;
   const realSetups = state.setups.filter((s) => !s.isDemo && s.active).length;
@@ -475,15 +477,11 @@ function RulesPage({ state, setState, embedded = false }: { state: AppState; set
       {rule.rationale && <div className="why"><b>Por quê:</b> {rule.rationale}</div>}
       {!!rule.attachments.length && <div className="mini-images">{rule.attachments.slice(0, 3).map((img) => <img key={img.id} src={img.dataUrl} alt={img.name} />)}</div>}
       <div className="card-actions"><button onClick={() => edit(rule)}>Editar</button><button className="danger" onClick={() => {
-        if (!confirm(translateUi("Remover esta regra?", activeLanguage))) return;
+        const affected = state.plans.filter((plan) => plan.review.violatedRuleIds.includes(rule.id)).length;
+        if (!confirm(`Remover esta regra? ${affected} revisão(ões) continuarão referenciando a regra removida para preservar o histórico de violações.`)) return;
         setState((current) => ({
           ...current,
           rules: current.rules.filter((item) => item.id !== rule.id),
-          plans: current.plans.map((plan) => ({
-            ...plan,
-            review: { ...plan.review, violatedRuleIds: plan.review.violatedRuleIds.filter((id) => id !== rule.id) },
-          })),
-          trainingRecords: current.trainingRecords.map((record) => record.ruleId === rule.id ? { ...record, ruleId: undefined } : record),
         }));
       }}>Remover</button></div>
     </article>)}</div>
@@ -544,15 +542,11 @@ function SetupsPage({ state, setState, embedded = false }: { state: AppState; se
       {setup.invalidation && <div className="why"><b>Invalida quando:</b> {setup.invalidation}</div>}
       {!!setup.attachments.length && <div className="mini-images">{setup.attachments.slice(0, 3).map((img) => <img key={img.id} src={img.dataUrl} alt={img.name} />)}</div>}
       <div className="card-actions"><button onClick={() => edit(setup)}>Editar</button><button className="danger" onClick={() => {
-        if (!confirm(translateUi("Remover este setup?", activeLanguage))) return;
+        const affected = state.plans.filter((plan) => plan.setupId === setup.id).length;
+        if (!confirm(`Remover este setup? ${affected} plano(s) manterão a referência histórica ao setup removido.`)) return;
         setState((current) => ({
           ...current,
           setups: current.setups.filter((item) => item.id !== setup.id),
-          plans: current.plans.map((plan) => plan.setupId === setup.id ? { ...plan, setupId: undefined } : plan),
-          planTemplates: current.planTemplates.map((template) => template.setupId === setup.id ? { ...template, setupId: undefined } : template),
-          studies: current.studies.map((study) => study.setupId === setup.id ? { ...study, setupId: undefined } : study),
-          trainingRecords: current.trainingRecords.map((record) => record.setupId === setup.id ? { ...record, setupId: undefined } : record),
-          setupExamples: current.setupExamples.filter((example) => example.setupId !== setup.id),
         }));
       }}>Remover</button></div>
     </article>)}</div>
@@ -667,6 +661,14 @@ function PlanEditor({ initial, assets, setups, rules, onPersist, onCreateTemplat
   const [notice, setNotice] = useState("");
   const isFrozen = draft.planStatus === "frozen";
   const readiness = planReadiness(draft);
+  const hasUnsavedChanges = JSON.stringify({ ...draft, isDemo: undefined }) !== JSON.stringify({ ...initial, isDemo: undefined });
+
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [hasUnsavedChanges]);
 
   function patchScenario(id: string, next: Scenario) {
     setDraft((d) => ({ ...d, scenarios: d.scenarios.map((s) => s.id === id ? next : s) }));
@@ -704,8 +706,7 @@ function PlanEditor({ initial, assets, setups, rules, onPersist, onCreateTemplat
   }
 
   function closeWithoutSaving() {
-    const changed = JSON.stringify(draft) !== JSON.stringify(initial);
-    if (changed && !confirm(translateUi("Há alterações não salvas. Fechar mesmo assim?", activeLanguage))) return;
+    if (hasUnsavedChanges && !confirm(translateUi("Há alterações não salvas. Fechar mesmo assim?", activeLanguage))) return;
     onClose();
   }
 
@@ -844,6 +845,14 @@ function StudyEditor({ initial, assets, setups, onSave, onClose }: {
 }) {
   const [draft, setDraft] = useState<TradeStudy>(() => structuredClone(initial));
   const [message, setMessage] = useState("");
+  const hasUnsavedChanges = JSON.stringify({ ...draft, isDemo: undefined }) !== JSON.stringify({ ...initial, isDemo: undefined });
+
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [hasUnsavedChanges]);
   function patchScenario(id: string, next: Scenario) {
     setDraft((d) => ({ ...d, scenarios: d.scenarios.map((s) => s.id === id ? next : s) }));
   }
@@ -875,8 +884,7 @@ function StudyEditor({ initial, assets, setups, onSave, onClose }: {
   }
 
   function closeWithoutSaving() {
-    const changed = JSON.stringify(draft) !== JSON.stringify(initial);
-    if (changed && !confirm(translateUi("Há alterações não salvas. Fechar mesmo assim?", activeLanguage))) return;
+    if (hasUnsavedChanges && !confirm(translateUi("Há alterações não salvas. Fechar mesmo assim?", activeLanguage))) return;
     onClose();
   }
 
@@ -1141,7 +1149,17 @@ function PlanningPage({ state, setState }: { state: AppState; setState: React.Di
             <button onClick={() => setEditingPlan(structuredClone(entry.plan))}>Abrir / editar</button>
             <button onClick={() => duplicate(entry.plan)}>Duplicar sem revisão</button>
             <button onClick={() => downloadText(`plano-${entry.plan.asset}-${entry.plan.tradingDate}.txt`, buildPlanText(entry.plan, state.rules))}>Exportar texto</button>
-            <button className="danger" onClick={() => { if (confirm(translateUi("Remover este plano?", activeLanguage))) setState((current) => ({ ...current, plans: current.plans.filter((item) => item.id !== entry.plan.id) })); }}>Remover</button>
+            <button className="danger" onClick={() => {
+              const linked = state.journalTrades.filter((trade) => trade.planId === entry.plan.id).length;
+              if (!confirm(`Remover este plano? ${linked} trade(s) do diário serão desvinculados, sem serem apagados.`)) return;
+              setState((current) => ({
+                ...current,
+                plans: current.plans.filter((item) => item.id !== entry.plan.id),
+                journalTrades: current.journalTrades.map((trade) => trade.planId === entry.plan.id
+                  ? { ...trade, planId: undefined, sessionId: undefined, scenarioLabel: "" as const }
+                  : trade),
+              }));
+            }}>Remover</button>
           </div>
         </article>
       ) : (
@@ -1374,6 +1392,13 @@ function importedValue(row: Record<string, unknown>, aliases: string[]) {
   return "";
 }
 
+function normalizedAssetForLink(value: string) {
+  const asset = value.toUpperCase();
+  if (/^WIN(?:FUT|[FGHJKMNQUVXZ]\d{2})$/.test(asset)) return "WINFUT";
+  if (/^WDO(?:FUT|[FGHJKMNQUVXZ]\d{2})$/.test(asset)) return "WDOFUT";
+  return asset;
+}
+
 function journalTradeFromRow(row: Record<string, unknown>, source: string, state: AppState): JournalTrade | null {
   const tradingDate = normalizedTradeDate(importedValue(row, ["tradingDate", "tradeDate", "date", "data", "dataPregao"]));
   const asset = importedValue(row, ["asset", "ativo", "symbol", "ticker"]).toUpperCase();
@@ -1383,7 +1408,7 @@ function journalTradeFromRow(row: Record<string, unknown>, source: string, state
   const scenarioLabel: JournalTrade["scenarioLabel"] = rawScenario === "A" || rawScenario === "B" || rawScenario === "C" ? rawScenario : "";
   const requestedPlanId = importedValue(row, ["planId", "planoId"]);
   const requestedPlan = requestedPlanId ? state.plans.find((plan) => plan.id === requestedPlanId) : undefined;
-  const candidates = state.plans.filter((plan) => plan.tradingDate === tradingDate && plan.asset.toUpperCase() === asset);
+  const candidates = state.plans.filter((plan) => plan.tradingDate === tradingDate && normalizedAssetForLink(plan.asset) === normalizedAssetForLink(asset));
   const plan = requestedPlan ?? (candidates.length === 1 ? candidates[0] : undefined);
 
   return {
@@ -1394,8 +1419,8 @@ function journalTradeFromRow(row: Record<string, unknown>, source: string, state
     side: importedValue(row, ["side", "direction", "lado", "direcao", "tipo"]),
     entryTime: importedValue(row, ["entryTime", "horaEntrada", "entradaHora", "openTime"]),
     exitTime: importedValue(row, ["exitTime", "horaSaida", "saidaHora", "closeTime"]),
-    entryPrice: importedValue(row, ["entryPrice", "precoEntrada", "entrada", "openPrice"]),
-    exitPrice: importedValue(row, ["exitPrice", "precoSaida", "saida", "closePrice"]),
+    entryPrice: importedValue(row, ["entryPrice", "precoEntrada", "openPrice"]),
+    exitPrice: importedValue(row, ["exitPrice", "precoSaida", "closePrice"]),
     quantity: importedValue(row, ["quantity", "qty", "quantidade", "contratos"]),
     result: importedValue(row, ["result", "resultado", "pnl", "profit", "lucro"]),
     notes: importedValue(row, ["notes", "nota", "observacao", "observacoes", "comment"]),
@@ -1408,14 +1433,15 @@ function journalTradeFromRow(row: Record<string, unknown>, source: string, state
 }
 
 function parseJournalImport(text: string, source: string, state: AppState) {
-  return parseJournalRows(text)
-    .map((row) => journalTradeFromRow(row, source, state))
+  const rows = parseJournalRows(text);
+  const trades = rows.map((row) => journalTradeFromRow(row, source, state))
     .filter((trade): trade is JournalTrade => !!trade);
+  return { trades, discarded: rows.length - trades.length };
 }
 
 function journalTradeKey(trade: JournalTrade) {
   return trade.externalId
-    ? `${trade.importSource}::${trade.externalId}`
+    ? [trade.externalId, trade.tradingDate, trade.asset, trade.entryTime, trade.entryPrice].join("::")
     : [trade.tradingDate, trade.asset, trade.entryTime, trade.exitTime, trade.entryPrice, trade.exitPrice, trade.quantity, trade.result].join("::");
 }
 
@@ -1442,15 +1468,22 @@ function JournalIntegration({ state, setState }: { state: AppState; setState: Re
   async function importFile(file: File | undefined) {
     if (!file) return;
     try {
-      const parsed = parseJournalImport(await file.text(), file.name, state);
+      const result = parseJournalImport(await file.text(), file.name, state);
+      const parsed = result.trades;
       if (!parsed.length) {
         setMessage("Nenhum trade válido foi encontrado. O arquivo precisa conter ao menos data e ativo.");
         return;
       }
       const existing = new Set(state.journalTrades.map(journalTradeKey));
-      const fresh = parsed.filter((trade) => !existing.has(journalTradeKey(trade)));
+      const fresh = parsed.filter((trade) => {
+        const key = journalTradeKey(trade);
+        if (existing.has(key)) return false;
+        existing.add(key);
+        return true;
+      });
+      const duplicates = parsed.length - fresh.length;
       if (!fresh.length) {
-        setMessage("Nenhum trade novo foi importado; os registros identificáveis já existiam.");
+        setMessage(`Nenhum trade novo foi importado. ${duplicates} duplicado(s), ${result.discarded} linha(s) ignorada(s) por falta de data/ativo válido.`);
         return;
       }
 
@@ -1474,7 +1507,7 @@ function JournalIntegration({ state, setState }: { state: AppState; setState: Re
         return { ...current, plans, journalTrades: [...fresh, ...current.journalTrades] };
       });
       const autoLinked = fresh.filter((trade) => !!trade.planId).length;
-      setMessage(`${fresh.length} trade(s) importado(s). ${autoLinked} vinculado(s) automaticamente por data + ativo.`);
+      setMessage(`${fresh.length} trade(s) importado(s). ${autoLinked} vinculado(s) automaticamente por data + ativo. ${duplicates} duplicado(s), ${result.discarded} linha(s) ignorada(s).`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Falha ao importar o diário.");
     }
@@ -1490,7 +1523,7 @@ function JournalIntegration({ state, setState }: { state: AppState; setState: Re
   }
 
   const realTrades = state.journalTrades.filter((trade) => !trade.isDemo);
-  const linked = realTrades.filter((trade) => !!trade.planId).length;
+  const linked = realTrades.filter((trade) => state.plans.some((plan) => plan.id === trade.planId)).length;
   const unlinked = realTrades.length - linked;
   const scenarioIssues = realTrades.filter((trade) => !tradeHasPreplannedScenario(trade, state.plans.find((plan) => plan.id === trade.planId))).length;
 
@@ -1505,12 +1538,14 @@ function JournalIntegration({ state, setState }: { state: AppState; setState: Re
 
     <div className="journal-stats"><div><strong>{realTrades.length}</strong><span>trades importados</span></div><div><strong>{linked}</strong><span>vinculados a planos</span></div><div><strong>{unlinked}</strong><span>sem plano vinculado</span></div><div><strong>{scenarioIssues}</strong><span>sem cenário pré-planejado</span></div></div>
 
+    {state.journalTrades.length > 100 && <p className="muted-text">Exibindo os 100 registros mais recentes de ${state.journalTrades.length} trades. Os totais consideram todos os registros.</p>}
     {!!state.journalTrades.length && <div className="journal-table-wrap"><table className="journal-table"><thead><tr><th>Data</th><th>Ativo</th><th>Execução</th><th>Resultado</th><th>Plano</th><th>Cenário</th><th></th></tr></thead><tbody>{state.journalTrades.slice(0, 100).map((trade) => {
       const linkedPlan = state.plans.find((plan) => plan.id === trade.planId);
       return <tr key={trade.id}><td>{fmtDate(trade.tradingDate)}</td><td><b>{trade.asset}</b>{trade.isDemo && <span className="badge demo">Exemplo</span>}<small>{trade.side}</small></td><td><span>{[trade.entryTime, trade.entryPrice].filter(Boolean).join(" @ ") || "—"}</span><small>{[trade.exitTime, trade.exitPrice].filter(Boolean).join(" @ ")}</small></td><td>{trade.result || "—"}</td><td><select value={trade.planId ?? ""} onChange={(e) => linkPlan(trade, e.target.value)}><option value="">Sem vínculo</option>{state.plans.map((plan) => <option key={plan.id} value={plan.id}>{plan.asset} • {fmtDate(plan.tradingDate)}</option>)}</select></td><td><select value={trade.scenarioLabel} disabled={!linkedPlan} onChange={(e) => patchTrade(trade.id, { scenarioLabel: e.target.value as JournalTrade["scenarioLabel"] })}><option value="">—</option><option value="A">A</option><option value="B">B</option><option value="C">C</option></select>{linkedPlan && !tradeHasPreplannedScenario(trade, linkedPlan) && <small className="warning-text">Não corresponde a cenário previamente definido.</small>}</td><td><button className="tiny danger" onClick={() => setState((current) => ({ ...current, journalTrades: current.journalTrades.filter((item) => item.id !== trade.id) }))}>Remover</button></td></tr>;
     })}</tbody></table></div>}
 
     <div className="history-section-title journal-report-title"><div><h3>Planejei × operei × registrei</h3></div></div>
+    {reportPlans.length > 50 && <p className="muted-text">Exibindo 50 de ${reportPlans.length} planos neste relatório.</p>}
     {reportPlans.length ? <div className="joint-report">{reportPlans.slice(0, 50).map((plan) => {
       const trades = state.journalTrades.filter((trade) => trade.planId === plan.id);
       const operated = !!plan.review.executionSummary || trades.length > 0;
@@ -1681,13 +1716,13 @@ function HistoryPage({ state, setState }: { state: AppState; setState: React.Dis
       <div className="calendar-grid">{weekdays.map((day) => <div className="calendar-weekday" key={day}>{day}</div>)}{calendarCells(calendarMonth).map((date, index) => {
         if (!date) return <div className="calendar-day empty-day" key={`empty-${index}`} />;
         const dayPlans = plansByDate.get(date) || [];
-        return <div className={`calendar-day ${date === isoDateLocal() ? "today" : ""}`} key={date}><b>{Number(date.slice(-2))}</b><div>{dayPlans.map((plan) => <span className={`calendar-plan ${plan.review.reviewedAt ? "reviewed" : plan.planStatus === "frozen" ? "frozen" : ""}`} key={plan.id}>{plan.asset} {plan.review.reviewedAt ? "✓" : ""}</span>)}</div></div>;
+        return <div className={`calendar-day ${date === isoDateLocal() ? "today" : ""}`} key={date}><b>{Number(date.slice(-2))}</b><div>{dayPlans.map((plan) => <span className={`calendar-plan ${plan.review.reviewedAt ? "reviewed" : plan.versions.length ? "frozen" : ""}`} key={plan.id}>{plan.asset} {plan.review.reviewedAt ? "✓" : ""}</span>)}</div></div>;
       })}</div>
       <div className="calendar-legend"><span><i className="legend-dot reviewed"></i>Revisado</span><span><i className="legend-dot frozen"></i>Versão registrada</span><span><i className="legend-dot"></i>Rascunho</span></div>
     </div>
 
     <div className="history-metrics-grid">
-      <div className="panel"><h2>Por setup</h2>{setupStats.length ? <div className="metric-list">{setupStats.map((item) => <div className="metric-row" key={item.id}><div><b>{item.title}</b><span>{item.total} revisão(ões) • {item.partial} parcial(is) • {item.no} não</span></div><strong>{item.total ? Math.round(item.yes / item.total * 100) : 0}%</strong></div>)}</div> : <div className="empty">Ainda não há revisões suficientes neste recorte.</div>}</div>
+      <div className="panel"><h2>Por setup</h2>{setupStats.length ? <div className="metric-list">{setupStats.map((item) => <div className="metric-row" key={item.id}><div><b>{item.title}</b><span>{item.total} revisão(ões) • {item.partial} parcial(is) • {item.no} não</span></div><strong>{item.yes + item.partial + item.no ? `${Math.round(item.yes / (item.yes + item.partial + item.no) * 100)}%` : "—"}</strong></div>)}</div> : <div className="empty">Ainda não há revisões suficientes neste recorte.</div>}</div>
 
       <div className="panel"><h2>Regras mais violadas</h2>{violationStats.length ? <div className="metric-list">{violationStats.map((item) => <div className="metric-row" key={item.id}><div><b>{item.title}</b><span>{item.category}</span></div><strong>{item.count}×</strong></div>)}</div> : <div className="empty">Nenhuma violação estruturada registrada neste recorte.</div>}</div>
 
