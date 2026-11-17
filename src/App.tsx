@@ -1727,7 +1727,12 @@ function InfoTip({ label, children }: { label: string; children: React.ReactNode
   </span>;
 }
 
-function SettingsPage({ state, setState }: { state: AppState; setState: React.Dispatch<React.SetStateAction<AppState>> }) {
+function SettingsPage({ state, setState, onRecover, recoveryMode }: {
+  state: AppState;
+  setState: React.Dispatch<React.SetStateAction<AppState>>;
+  onRecover: (next: AppState) => Promise<void>;
+  recoveryMode: boolean;
+}) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState("");
 
@@ -1830,33 +1835,55 @@ function SettingsPage({ state, setState }: { state: AppState; setState: React.Di
     }
   }
 
+  async function preserveBeforeReplace() {
+    if (isDesktopApp()) {
+      const path = await createDesktopBackup();
+      if (!path) throw new Error("Não foi possível criar o backup anterior à alteração.");
+      setDesktopStorageMessage(`Backup anterior preservado em: ${path}`);
+      return;
+    }
+    if (recoveryMode) {
+      // Em modo protegido, o estado exibido é apenas um fallback; salvar o
+      // fallback como backup destruiria a chance de recuperação do JSON bruto.
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) throw new Error("Não foi possível obter o conteúdo bruto para preservar os dados.");
+      downloadText(`trade-blueprint-recuperacao-${isoDateLocal()}.json`, raw);
+    } else {
+      exportBackup(state);
+    }
+  }
+
   async function importFile(file: File | undefined) {
     if (!file) return;
     try {
       const next = ensureDemoData(parseBackup(await file.text()));
-      clearStorageLoadGuard();
-      setState(next);
-      setMessage("Backup importado com sucesso. Backups anteriores são migrados automaticamente para o schema atual.");
+      const summary = `Importar este backup substituirá os dados atuais.\nRegras: ${state.rules.length} → ${next.rules.length}\nSetups: ${state.setups.length} → ${next.setups.length}\nPlanos: ${state.plans.length} → ${next.plans.length}\nOportunidades: ${state.studies.length} → ${next.studies.length}\nUma cópia de segurança dos dados anteriores será criada. Continuar?`;
+      if (!confirm(summary)) return;
+      await preserveBeforeReplace();
+      await onRecover(next);
+      setMessage("Backup importado e persistido com sucesso. Os dados anteriores foram preservados em um backup de segurança.");
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Falha ao importar backup.");
+    } finally {
+      if (fileRef.current) fileRef.current.value = "";
     }
   }
 
   async function clearAllData() {
     if (!confirm(translateUi("Apagar todos os dados locais? Esta ação não pode ser desfeita.", activeLanguage))) return;
-
     try {
-      if (isDesktopApp()) {
-        const path = await createDesktopBackup();
-        if (!path) throw new Error("Não foi possível criar o backup de segurança antes da limpeza.");
-        setDesktopStorageMessage(`Backup de segurança criado em: ${path}`);
-      }
-      localStorage.removeItem(STORAGE_KEY);
-      if (!isDesktopApp()) await clearWebAttachmentStore();
-      clearStorageLoadGuard();
+      await preserveBeforeReplace();
       const fresh = { ...initialState(), demoDataVersion: DEMO_DATA_VERSION };
-      setState(fresh);
-      setMessage("Dados locais apagados. No desktop, um backup de segurança foi criado antes da limpeza.");
+      await onRecover(fresh);
+      if (!isDesktopApp()) {
+        try {
+          await clearWebAttachmentStore();
+        } catch (error) {
+          setMessage(`Os dados principais foram zerados, mas não foi possível limpar todos os anexos antigos: ${error instanceof Error ? error.message : String(error)}`);
+          return;
+        }
+      }
+      setMessage("Dados locais zerados e salvamento reativado. Uma cópia de segurança foi exportada ou preservada antes da limpeza.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : String(error));
     }
@@ -1900,7 +1927,7 @@ function SettingsPage({ state, setState }: { state: AppState; setState: React.Di
             </div>
           </> : <p className="muted-text">Você está usando a versão web. O instalador Windows baseado em Tauri possui atualização automática integrada.</p>}
         </div>
-        <h2>Backup e recuperação</h2><p className="muted-text">O JSON é o formato de recuperação completa. O schema v9 inclui planos de pregão, oportunidades futuras, modelos, execuções importadas, histórico estruturado, treinamento deliberado, regras e setups, versões de referência, preferência de idioma e imagens deduplicadas por ID. No uso normal, os binários ficam fora do estado principal: em arquivos no desktop e no IndexedDB na web.</p>
+        <h2>Backup e recuperação</h2><p className="muted-text">O JSON é o formato de recuperação completa. O schema v9 inclui planos de pregão, oportunidades futuras, modelos, execuções importadas, histórico estruturado, regras e setups, versões de referência, preferência de idioma e imagens deduplicadas por ID. No uso normal, os binários ficam fora do estado principal: em arquivos no desktop e no IndexedDB na web.</p>
         <div className="stack-actions"><button className="primary" onClick={() => exportBackup(state)}>Exportar backup JSON</button><button onClick={() => fileRef.current?.click()}>Importar backup JSON</button><input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => void importFile(e.target.files?.[0])} /></div>
         {message && <div className="notice">{message}</div>}
         <div className="danger-zone"><h3>Zona de risco</h3><p>Apaga os dados locais deste dispositivo. No aplicativo desktop, um backup de segurança é criado antes da limpeza.</p><button className="danger" onClick={() => void clearAllData()}>Apagar todos os dados</button></div>
@@ -2004,25 +2031,51 @@ export default function App() {
     if (desktop) {
       if (!desktopReady || desktopLoadBlocked) return;
       const timer = window.setTimeout(() => {
-        const serialized = serializeState(state);
-        void saveDesktopState(serialized, isoDateLocal())
-          .then((result) => setSaveError(result?.backupWarning ? `Dados salvos, mas o backup automático falhou: ${result.backupWarning}` : ""))
-          .catch((error) => setSaveError(error instanceof Error ? error.message : String(error)));
+        try {
+          const serialized = serializeState(state);
+          void saveDesktopState(serialized, isoDateLocal())
+            .then((result) => setSaveError(result?.backupWarning ? `Dados salvos, mas o backup automático falhou: ${result.backupWarning}` : ""))
+            .catch((error) => setSaveError(error instanceof Error ? error.message : String(error)));
+        } catch (error) {
+          setSaveError(error instanceof Error ? error.message : String(error));
+        }
       }, 250);
       return () => window.clearTimeout(timer);
     }
 
     if (!webReady || webLoadBlocked) return;
     const timer = window.setTimeout(() => {
-      const serialized = serializeState(state);
-      void saveWebStateExternalized(serialized)
-        .then(() => setSaveError(""))
-        .catch((error) => setSaveError(error instanceof Error
-          ? error.message
-          : "O navegador não conseguiu salvar os dados. Exporte um backup antes de continuar."));
+      try {
+        const serialized = serializeState(state);
+        void saveWebStateExternalized(serialized)
+          .then(() => setSaveError(""))
+          .catch((error) => setSaveError(error instanceof Error
+            ? error.message
+            : "O navegador não conseguiu salvar os dados. Exporte um backup antes de continuar."));
+      } catch (error) {
+        setSaveError(error instanceof Error ? error.message : String(error));
+      }
     }, 250);
     return () => window.clearTimeout(timer);
   }, [state, desktopReady, desktopLoadBlocked, webReady, webLoadBlocked, desktop]);
+
+  async function recoverState(next: AppState) {
+    // Persistir primeiro; só desbloquear o salvamento quando a escrita foi confirmada.
+    const serialized = serializeState(next);
+    if (desktop) {
+      const result = await saveDesktopState(serialized, isoDateLocal());
+      setDesktopLoadBlocked(false);
+      setDesktopReady(true);
+      setSaveError(result?.backupWarning ? `Dados restaurados, mas backup automático falhou: ${result.backupWarning}` : "");
+    } else {
+      await saveWebStateExternalized(serialized, true);
+      setWebLoadBlocked(false);
+      setWebReady(true);
+      setSaveError("");
+    }
+    clearStorageLoadGuard();
+    setState(next);
+  }
 
   const nav: Array<[Tab, string, string]> = [
     ["dashboard", "Visão geral", "⌂"],
@@ -2046,7 +2099,7 @@ export default function App() {
       <div hidden={tab !== "system"}><SystemPage state={state} setState={setState} /></div>
       <div hidden={tab !== "planning"}><PlanningPage state={state} setState={setState} /></div>
       <div hidden={tab !== "history"}><HistoryPage state={state} setState={setState} /></div>
-      <div hidden={tab !== "settings"}><SettingsPage state={state} setState={setState} /></div>
+      <div hidden={tab !== "settings"}><SettingsPage state={state} setState={setState} onRecover={recoverState} recoveryMode={desktop ? desktopLoadBlocked : webLoadBlocked} /></div>
     </main>
   </div>;
 }
