@@ -1538,14 +1538,14 @@ function JournalIntegration({ state, setState }: { state: AppState; setState: Re
 
     <div className="journal-stats"><div><strong>{realTrades.length}</strong><span>trades importados</span></div><div><strong>{linked}</strong><span>vinculados a planos</span></div><div><strong>{unlinked}</strong><span>sem plano vinculado</span></div><div><strong>{scenarioIssues}</strong><span>sem cenário pré-planejado</span></div></div>
 
-    {state.journalTrades.length > 100 && <p className="muted-text">Exibindo os 100 registros mais recentes de ${state.journalTrades.length} trades. Os totais consideram todos os registros.</p>}
+    {state.journalTrades.length > 100 && <p className="muted-text">Exibindo os 100 registros mais recentes de {state.journalTrades.length} trades. Os totais consideram todos os registros.</p>}
     {!!state.journalTrades.length && <div className="journal-table-wrap"><table className="journal-table"><thead><tr><th>Data</th><th>Ativo</th><th>Execução</th><th>Resultado</th><th>Plano</th><th>Cenário</th><th></th></tr></thead><tbody>{state.journalTrades.slice(0, 100).map((trade) => {
       const linkedPlan = state.plans.find((plan) => plan.id === trade.planId);
       return <tr key={trade.id}><td>{fmtDate(trade.tradingDate)}</td><td><b>{trade.asset}</b>{trade.isDemo && <span className="badge demo">Exemplo</span>}<small>{trade.side}</small></td><td><span>{[trade.entryTime, trade.entryPrice].filter(Boolean).join(" @ ") || "—"}</span><small>{[trade.exitTime, trade.exitPrice].filter(Boolean).join(" @ ")}</small></td><td>{trade.result || "—"}</td><td><select value={trade.planId ?? ""} onChange={(e) => linkPlan(trade, e.target.value)}><option value="">Sem vínculo</option>{state.plans.map((plan) => <option key={plan.id} value={plan.id}>{plan.asset} • {fmtDate(plan.tradingDate)}</option>)}</select></td><td><select value={trade.scenarioLabel} disabled={!linkedPlan} onChange={(e) => patchTrade(trade.id, { scenarioLabel: e.target.value as JournalTrade["scenarioLabel"] })}><option value="">—</option><option value="A">A</option><option value="B">B</option><option value="C">C</option></select>{linkedPlan && !tradeHasPreplannedScenario(trade, linkedPlan) && <small className="warning-text">Não corresponde a cenário previamente definido.</small>}</td><td><button className="tiny danger" onClick={() => setState((current) => ({ ...current, journalTrades: current.journalTrades.filter((item) => item.id !== trade.id) }))}>Remover</button></td></tr>;
     })}</tbody></table></div>}
 
     <div className="history-section-title journal-report-title"><div><h3>Planejei × operei × registrei</h3></div></div>
-    {reportPlans.length > 50 && <p className="muted-text">Exibindo 50 de ${reportPlans.length} planos neste relatório.</p>}
+    {reportPlans.length > 50 && <p className="muted-text">Exibindo 50 de {reportPlans.length} planos neste relatório.</p>}
     {reportPlans.length ? <div className="joint-report">{reportPlans.slice(0, 50).map((plan) => {
       const trades = state.journalTrades.filter((trade) => trade.planId === plan.id);
       const operated = !!plan.review.executionSummary || trades.length > 0;

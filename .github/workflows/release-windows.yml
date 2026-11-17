@@ -27,11 +27,15 @@ jobs:
       - name: Resolve release tag
         id: release
         shell: pwsh
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REQUESTED_TAG: ${{ inputs.tag }}
+          REF_TAG: ${{ github.ref_name }}
         run: |
-          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
-            $tag = "${{ inputs.tag }}"
+          if ($env:EVENT_NAME -eq "workflow_dispatch") {
+            $tag = $env:REQUESTED_TAG
           } else {
-            $tag = "${{ github.ref_name }}"
+            $tag = $env:REF_TAG
           }
 
           if ($tag -notmatch '^v\d+\.\d+\.\d+([-.][0-9A-Za-z.-]+)?$') {
@@ -110,7 +114,7 @@ jobs:
             plugins = @{
               updater = @{
                 pubkey = $env:UPDATER_PUBLIC_KEY
-                endpoints = @("https://github.com/pablopcdossantos2-sys/plano-de-trade/releases/latest/download/latest.json")
+                endpoints = @("https://github.com/pablopcdossantos2-sys/trade-blueprint/releases/latest/download/latest.json")
                 requireSignedVersion = $true
                 allowDowngrades = $false
                 windows = @{

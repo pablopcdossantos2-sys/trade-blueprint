@@ -52,8 +52,8 @@ Aceita:
 | Direção | `side`, `direction`, `lado`, `direcao`, `tipo` |
 | Hora de entrada | `entryTime`, `horaEntrada`, `entradaHora`, `openTime` |
 | Hora de saída | `exitTime`, `horaSaida`, `saidaHora`, `closeTime` |
-| Preço de entrada | `entryPrice`, `precoEntrada`, `entrada`, `openPrice` |
-| Preço de saída | `exitPrice`, `precoSaida`, `saida`, `closePrice` |
+| Preço de entrada | `entryPrice`, `precoEntrada`, `openPrice` |
+| Preço de saída | `exitPrice`, `precoSaida`, `closePrice` |
 | Quantidade | `quantity`, `qty`, `quantidade`, `contratos` |
 | Resultado | `result`, `resultado`, `pnl`, `profit`, `lucro` |
 | Observações | `notes`, `nota`, `observacao`, `observacoes`, `comment` |
@@ -117,7 +117,7 @@ Ao importar um trade:
 - se houver zero ou mais de um plano compatível, o trade fica sem vínculo;
 - o vínculo pode ser corrigido manualmente depois.
 
-O `sessionId` é gerado pelo Trade Blueprint e permanece estável para aquele plano/pregão.
+O `sessionId` é gerado pelo Trade Blueprint e permanece estável para aquele plano/pregão. Para WIN e WDO, contratos como `WINZ26` e `WDOX26` são reconhecidos como equivalentes a `WINFUT` e `WDOFUT` na etapa de vínculo, sem alterar o ticker original importado.
 
 ## Preenchimento da revisão
 
@@ -145,7 +145,7 @@ Trades sem essa correspondência aparecem no indicador **sem cenário pré-plane
 Se existir ID externo, a deduplicação utiliza a combinação:
 
 ```text
-arquivo de origem + ID externo
+ID externo + data + ativo + horário/preço de entrada
 ```
 
 Sem ID externo, é usada uma combinação de:
@@ -157,7 +157,7 @@ Sem ID externo, é usada uma combinação de:
 - quantidade;
 - resultado.
 
-## Relatório conjunto
+Duplicatas dentro do mesmo arquivo também são descartadas. A confirmação informa quantas linhas foram ignoradas e quantas eram duplicadas. Campos genéricos `entrada`/`saida` não são tratados como preço, para evitar interpretar datas ou horários como cotações.\n\n## Relatório conjunto
 
 A seção Histórico mostra um relatório:
 
