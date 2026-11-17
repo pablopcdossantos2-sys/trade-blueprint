@@ -60,9 +60,10 @@ pub async fn install_update(app: AppHandle, expected_version: String) -> Result<
         );
     }
 
+    // O timeout cobre também o corpo do download; 30s interrompia conexões lentas.
     let updater = app
         .updater_builder()
-        .timeout(Duration::from_secs(30))
+        .timeout(Duration::from_secs(300))
         .build()
         .map_err(|error| format!("Não foi possível iniciar o atualizador: {error}"))?;
 

@@ -4,6 +4,7 @@ use serde_json::Value;
 use std::{
     collections::BTreeSet,
     fs,
+    io::Write,
     path::{Path, PathBuf},
     time::{SystemTime, UNIX_EPOCH},
 };
@@ -323,9 +324,15 @@ fn set_config(connection: &Connection, key: &str, value: &str) -> Result<(), Str
 fn backup_directory_internal(app: &AppHandle, connection: &Connection) -> Result<PathBuf, String> {
     if let Some(configured) = get_config(connection, "backup_directory")? {
         let path = PathBuf::from(configured);
-        fs::create_dir_all(&path)
-            .map_err(|error| format!("Não foi possível acessar a pasta de backup: {error}"))?;
-        return Ok(path);
+        // O disco removível/rede configurado pode estar indisponível. Nesses
+        // casos usamos o diretório padrão para não bloquear a recuperação.
+        if fs::create_dir_all(&path).is_ok() {
+            let probe = path.join(format!(".trade-blueprint-write-test-{}", std::process::id()));
+            if fs::write(&probe, b"ok").is_ok() {
+                let _ = fs::remove_file(probe);
+                return Ok(path);
+            }
+        }
     }
     let path = app_data_dir(app)?.join(DEFAULT_BACKUP_FOLDER);
     fs::create_dir_all(&path)
@@ -349,10 +356,30 @@ fn write_raw_backup_file(
     kind: &str,
 ) -> Result<String, String> {
     let directory = backup_directory_internal(app, connection)?;
-    let stamp = timestamp()?;
+    let stamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|error| format!("Relógio do sistema inválido: {error}"))?
+        .as_nanos();
     let path = directory.join(format!("trade-blueprint-{kind}-{stamp}.json"));
-    fs::write(&path, state_json)
-        .map_err(|error| format!("Não foi possível criar o backup: {error}"))?;
+    let temporary = directory.join(format!(".trade-blueprint-{kind}-{stamp}.tmp"));
+    let write_result = (|| -> Result<(), String> {
+        let mut file = fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&temporary)
+            .map_err(|error| format!("Não foi possível iniciar o backup: {error}"))?;
+        file.write_all(state_json.as_bytes())
+            .map_err(|error| format!("Não foi possível escrever o backup: {error}"))?;
+        file.sync_all()
+            .map_err(|error| format!("Não foi possível sincronizar o backup: {error}"))?;
+        fs::rename(&temporary, &path)
+            .map_err(|error| format!("Não foi possível concluir o backup: {error}"))?;
+        Ok(())
+    })();
+    if write_result.is_err() {
+        let _ = fs::remove_file(&temporary);
+    }
+    write_result?;
     Ok(path.to_string_lossy().to_string())
 }
 
@@ -364,6 +391,37 @@ fn write_backup_file(
 ) -> Result<String, String> {
     validate_state_json(state_json)?;
     write_raw_backup_file(app, connection, state_json, kind)
+}
+
+// Mesmo com anexos ausentes, preservar o JSON bruto e os anexos físicos que
+// sobreviveram. Esse backup degradado é um ponto de resgate manual, não um
+// backup completo: nunca alegamos que seus anexos estão íntegros.
+fn write_resilient_backup(
+    app: &AppHandle,
+    connection: &Connection,
+    stored: &str,
+    kind: &str,
+) -> Result<String, String> {
+    match hydrate_attachment_data(app, stored) {
+        Ok(hydrated) => write_backup_file(app, connection, &hydrated, kind),
+        Err(_) => {
+            let path = write_raw_backup_file(app, connection, stored, kind)?;
+            let surviving = PathBuf::from(format!("{path}.attachments"));
+            fs::create_dir_all(&surviving)
+                .map_err(|error| format!("Não foi possível criar a cópia dos anexos sobreviventes: {error}"))?;
+            let source = attachment_directory(app)?;
+            for entry in fs::read_dir(source)
+                .map_err(|error| format!("Não foi possível listar os anexos sobreviventes: {error}"))?
+            {
+                let entry = entry.map_err(|error| format!("Falha ao ler anexo: {error}"))?;
+                if entry.file_type().map_err(|error| error.to_string())?.is_file() {
+                    fs::copy(entry.path(), surviving.join(entry.file_name()))
+                        .map_err(|error| format!("Não foi possível preservar anexo: {error}"))?;
+                }
+            }
+            Ok(path)
+        }
+    }
 }
 
 fn rotate_backup_kind(directory: &Path, kind: &str, limit: usize) -> Result<(), String> {
@@ -517,8 +575,7 @@ pub fn create_desktop_backup(app: AppHandle) -> Result<String, String> {
     let connection = open_db(&app)?;
     let stored = load_state_from_connection(&connection)?
         .ok_or_else(|| "Ainda não existe estado salvo no banco desktop.".to_string())?;
-    let state = hydrate_attachment_data(&app, &stored)?;
-    write_backup_file(&app, &connection, &state, "manual")
+    write_resilient_backup(&app, &connection, &stored, "manual")
 }
 
 #[tauri::command]
@@ -537,8 +594,7 @@ pub fn restore_desktop_backup(app: AppHandle, path: String) -> Result<String, St
     validate_state_json(&incoming)?;
 
     if let Some(current) = load_state_from_connection(&connection)? {
-        let hydrated = hydrate_attachment_data(&app, &current)?;
-        write_raw_backup_file(&app, &connection, &hydrated, "pre-restore")?;
+        write_resilient_backup(&app, &connection, &current, "pre-restore")?;
         let directory = backup_directory_internal(&app, &connection)?;
         rotate_backup_kind(&directory, "pre-restore", SAFETY_BACKUP_LIMIT)?;
     }
@@ -555,18 +611,21 @@ pub fn check_desktop_integrity(app: AppHandle) -> Result<IntegrityInfo, String> 
         .map_err(|error| format!("Falha ao executar PRAGMA quick_check: {error}"))?;
 
     let state = load_state_from_connection(&connection)?;
-    if let Some(json) = state.as_deref() {
-        let hydrated = hydrate_attachment_data(&app, json)?;
-        validate_state_json(&hydrated)?;
-    }
+    let integrity_error = state.as_deref().and_then(|json| {
+        hydrate_attachment_data(&app, json)
+            .and_then(|hydrated| validate_state_json(&hydrated))
+            .err()
+    });
 
-    let ok = quick_check.eq_ignore_ascii_case("ok");
+    let ok = quick_check.eq_ignore_ascii_case("ok") && integrity_error.is_none();
     Ok(IntegrityInfo {
         ok,
-        message: if ok {
-            "Banco SQLite e estado JSON íntegros.".to_string()
-        } else {
+        message: if !quick_check.eq_ignore_ascii_case("ok") {
             format!("SQLite retornou: {quick_check}")
+        } else if let Some(error) = integrity_error {
+            format!("Estado/anexos incompletos: {error}. Não apague os arquivos locais antes do resgate.")
+        } else {
+            "Banco SQLite e estado JSON íntegros.".to_string()
         },
         database_path: db_path(&app)?.to_string_lossy().to_string(),
         backup_directory: backup_directory_internal(&app, &connection)?
@@ -580,8 +639,7 @@ pub fn create_pre_update_backup(app: &AppHandle) -> Result<Option<String>, Strin
     let Some(stored) = load_state_from_connection(&connection)? else {
         return Ok(None);
     };
-    let state = hydrate_attachment_data(app, &stored)?;
-    let path = write_backup_file(app, &connection, &state, "pre-update")?;
+    let path = write_resilient_backup(app, &connection, &stored, "pre-update")?;
     let directory = backup_directory_internal(app, &connection)?;
     rotate_backup_kind(&directory, "pre-update", SAFETY_BACKUP_LIMIT)?;
     Ok(Some(path))
