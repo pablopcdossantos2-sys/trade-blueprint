@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { AppState } from "./types";
-import { translateUi } from "./i18n";
+import { translateUi } from "./i18n.ts";
 
 export const CURRENT_SCHEMA_VERSION = 9;
 // Mantemos a chave legada para preservar dados criados antes da adoção do nome Trade Blueprint.
